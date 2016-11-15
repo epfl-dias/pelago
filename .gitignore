@@ -1,5 +1,7 @@
 .??*
 opt
 build
+*_done
+src/*
 
 !.gitignore
