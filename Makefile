@@ -1,5 +1,6 @@
 PELAGOS_DIR	:= $(shell pwd)
 USER		?= $(shell id -un)
+VERBOSE		?= 0
 
 SRC_DIR		?= ${PELAGOS_DIR}/src
 INSTALL_DIR	?= ${PELAGOS_DIR}/opt
@@ -71,6 +72,8 @@ do-install-raw-jit-executor: raw-jit-executor.build_done
 #######################################################################
 # Build targets
 #######################################################################
+do-build-raw-jit-executor: glog gtest rapidjson
+
 do-build-llvm: llvm.configure_done
 	cd ${BUILD_DIR}/llvm && \
 		make -j ${JOBS}
@@ -163,6 +166,11 @@ src/llvm:
 #######################################################################
 # Makefile utils / Generic targets
 #######################################################################
+ifeq (${VERBOSE},0)
+# Do not echo the commands before executing them.
+.SILENT:
+endif
+
 .PHONY: show-config
 show-config:
 	@echo "-----------------------------------------------------------------------"
@@ -174,6 +182,7 @@ show-config:
 	@echo "INSTALL_DIR		:= ${INSTALL_DIR}"
 	@echo "JOBS			:= ${JOBS}"
 	@echo "USER			:= ${USER}"
+	@echo "VERBOSE			:= ${VERBOSE}"
 
 .PHONY: show-versions
 show-versions:
@@ -202,7 +211,7 @@ showvars:
 
 .PHONY: dist-clean
 dist-clean: clean
-	-@for f in glog gtest rapidjson llvm; \
+	-for f in glog gtest rapidjson llvm; \
 	do \
 		rm -rf ${SRC_DIR}/$${f}; \
 	done
@@ -228,19 +237,30 @@ do-build-%: %.configure_done
 
 .PRECIOUS: %.install_done
 %.install_done: %.build_done
+	@echo "-----------------------------------------------------------------------"
+	@echo "-- $$(echo $@ | sed -e 's,_done,,')..."
 	make do-install-$$(echo $@ | sed -e 's,.install_done,,')
+	@echo "-- $$(echo $@ | sed -e 's,_done,,') done."
 	touch $@
 
 .PRECIOUS: %.build_done
 %.build_done: %.configure_done
+	@echo "-----------------------------------------------------------------------"
+	@echo "-- $$(echo $@ | sed -e 's,_done,,')..."
 	make do-build-$$(echo $@ | sed -e 's,.build_done,,')
+	@echo "-- $$(echo $@ | sed -e 's,_done,,') done."
 	touch $@
 
 .PRECIOUS: %.configure_done
 %.configure_done: %.checkout_done
+	@echo "-----------------------------------------------------------------------"
+	@echo "-- $$(echo $@ | sed -e 's,_done,,')..."
 	make do-conf-$$(echo $@ | sed -e 's,.configure_done,,')
+	@echo "-- $$(echo $@ | sed -e 's,_done,,') done."
 	touch $@
 
 .PRECIOUS: %.checkout_done
 %.checkout_done: src/%
+	@echo "-----------------------------------------------------------------------"
+	@echo "$@ done."
 	touch $@
