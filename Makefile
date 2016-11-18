@@ -200,6 +200,17 @@ showvars:
 	@make --no-print-directory show-versions
 	@echo "-----------------------------------------------------------------------"
 
+.PHONY: dist-clean
+dist-clean: clean
+	-@for f in glog gtest rapidjson llvm; \
+	do \
+		rm -rf ${SRC_DIR}/$${f}; \
+	done
+
+.PHONY: clean
+clean:
+	git clean -dxf .
+
 %: %.install_done
 
 .PHONY: do-install-%
