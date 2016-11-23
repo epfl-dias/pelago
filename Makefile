@@ -66,9 +66,6 @@ do-install-gtest: gtest.build_done
 		cp *.a ${INSTALL_DIR}/lib && \
 		cp -r include/gtest ${INSTALL_DIR}/include
 
-do-install-raw-jit-executor: raw-jit-executor.build_done
-	@[ -e ${INSTALL_DIR}/raw-jit-executor ] || ln -s ${BUILD_DIR}/raw-jit-executor ${INSTALL_DIR}/raw-jit-executor
-
 #######################################################################
 # Build targets
 #######################################################################
