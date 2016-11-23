@@ -9,7 +9,7 @@ BUILD_DIR	?= ${PELAGOS_DIR}/build
 JOBS		?= $$(( $$(grep processor /proc/cpuinfo|tail -1|cut -d: -f2) + 1))
 
 RAW_CHECKOUT	?= "git clone https://${USER}@bitbucket.org/manolee/raw-jit-executor.git"
-RAW_REVISION	?= ""
+RAW_REVISION	?= "-b pelaGo"
 
 RAPIDJSON_CHECKOUT ?= "git clone https://github.com/miloyip/rapidjson"
 RAPIDJSON_REVISION ?= "-b v1.0.2"
