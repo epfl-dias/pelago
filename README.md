@@ -6,6 +6,8 @@ experience.
 
 ## Requirements
 
+ * Ubuntu 16.04 LTS
+ * CMake
  * GNU Make
  * git (to checkout this project and dependencies)
  * svn (to checkout & build LLVM)
