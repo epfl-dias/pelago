@@ -12,7 +12,7 @@ RAW_CHECKOUT	?= "git clone https://${USER}@bitbucket.org/manolee/raw-jit-executo
 RAW_REVISION	?= "-b pelaGo"
 
 RAPIDJSON_CHECKOUT ?= "git clone https://github.com/miloyip/rapidjson"
-RAPIDJSON_REVISION ?= "-b v1.0.2"
+RAPIDJSON_REVISION ?= "-b v1.1.0"
 
 GTEST_CHECKOUT	?= "git clone https://github.com/google/googletest.git"
 GTEST_REVISION	?= "-b release-1.7.0"
@@ -24,7 +24,7 @@ POSTGRES_CHECKOUT ?= "git clone https://github.com/postgres/postgres.git"
 POSTGRES_REVISION ?= ""
 
 LLVM_CHECKOUT	?= "svn co http://llvm.org/svn/llvm-project"
-LLVM_REVISION	?= "tags/RELEASE_34/final"
+LLVM_REVISION	?= "tags/RELEASE_391/final"
 
 all: postgres raw-jit-executor
 	@make --no-print-directory show-config
@@ -78,6 +78,8 @@ do-build-llvm: llvm.configure_done
 #######################################################################
 # Configure targets
 #######################################################################
+# LD_LIBRARY_PATH=${INSTALL_DIR}/lib \
+
 COMMON_ENV := \
  PATH=${INSTALL_DIR}/bin:${PATH} \
  CC=${INSTALL_DIR}/bin/clang \
@@ -121,12 +123,23 @@ do-conf-rapidjson: rapidjson.checkout_done llvm
 		cmake ${SRC_DIR}/rapidjson/ \
 			-DCMAKE_INSTALL_PREFIX=${INSTALL_DIR}
 
+# LLVM_ENABLE_CXX11: Make sure everything compiles using C++11
+# LLVM_ENABLE_EH: required for throwing exceptions
+# LLVM_ENABLE_RTTI: required for dynamic_cast
+# LLVM_REQUIRE_RTTI: required for dynamic_cast
 do-conf-llvm: llvm.checkout_done
 	[ -d ${BUILD_DIR}/llvm ] || mkdir -p ${BUILD_DIR}/llvm
 	cd ${BUILD_DIR}/llvm && cmake ${SRC_DIR}/llvm \
 		-DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
 		-DCMAKE_BUILD_TYPE=RelWithDebInfo \
-		-DLLVM_ENABLE_ASSERTIONS=On \
+		-DLLVM_ENABLE_CXX11=ON \
+		-DLLVM_ENABLE_ASSERTIONS=ON \
+		-DLLVM_ENABLE_PIC=ON \
+		-DLLVM_ENABLE_EH=ON \
+		-DLLVM_ENABLE_RTTI=ON \
+		-DLLVM_REQUIRES_RTTI=ON \
+		-DBUILD_SHARED_LIBS=ON \
+		-DLLVM_TARGETS_TO_BUILD="X86" \
 		-Wno-dev
 
 #######################################################################
@@ -155,10 +168,11 @@ src/postgres:
 .PRECIOUS: src/llvm
 src/llvm:
 	eval ${LLVM_CHECKOUT}/llvm/${LLVM_REVISION} src/llvm
-	eval ${LLVM_CHECKOUT}/compiler-rt/${LLVM_REVISION} src/llvm/tools/compiler-rt
 	eval ${LLVM_CHECKOUT}/cfe/${LLVM_REVISION} src/llvm/tools/clang
-	eval ${LLVM_CHECKOUT}/libcxx/${LLVM_REVISION} src/llvm/tools/libcxx
-	eval ${LLVM_CHECKOUT}/libcxx/${LLVM_REVISION} src/llvm/tools/libcxxabi
+	eval ${LLVM_CHECKOUT}/compiler-rt/${LLVM_REVISION} src/llvm/projects/compiler-rt
+	eval ${LLVM_CHECKOUT}/libcxx/${LLVM_REVISION} src/llvm/projects/libcxx
+	eval ${LLVM_CHECKOUT}/libcxxabi/${LLVM_REVISION} src/llvm/projects/libcxxabi
+	eval ${LLVM_CHECKOUT}/libunwind/${LLVM_REVISION} src/llvm/projects/libunwind
 
 #######################################################################
 # Makefile utils / Generic targets
