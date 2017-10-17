@@ -6,7 +6,7 @@
 
 if [ $# -ne 1 ]
 then
-    echo "Incorrect number of arguments, expecting only one string containig the SQL query."
+    echo "Incorrect number of arguments, expecting only one string containing the SQL query."
     while test $# -ne 0
     do
     	echo "- $1"

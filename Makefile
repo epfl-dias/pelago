@@ -6,10 +6,13 @@ SRC_DIR		?= ${PELAGOS_DIR}/src
 INSTALL_DIR	?= ${PELAGOS_DIR}/opt
 BUILD_DIR	?= ${PELAGOS_DIR}/build
 
+# CMAKE3		?= ~/cmake/bin/cmake
+CMAKE3		?= cmake3
+
 JOBS		?= $$(( $$(grep processor /proc/cpuinfo|tail -1|cut -d: -f2) + 1))
 
-RAW_CHECKOUT	?= "git clone https://${USER}@bitbucket.org/manolee/raw-jit-executor.git"
-RAW_REVISION	?= "-b pelaGo"
+RAW_CHECKOUT	?= "git clone git@bitbucket.org:manolee/raw-jit-executor.git"
+RAW_REVISION	?= "-b gpu"
 
 RAPIDJSON_CHECKOUT ?= "git clone https://github.com/miloyip/rapidjson"
 RAPIDJSON_REVISION ?= "-b v1.1.0"
@@ -24,7 +27,7 @@ POSTGRES_CHECKOUT ?= "git clone https://github.com/postgres/postgres.git"
 POSTGRES_REVISION ?= ""
 
 LLVM_CHECKOUT	?= "svn co http://llvm.org/svn/llvm-project"
-LLVM_REVISION	?= "tags/RELEASE_391/final"
+LLVM_REVISION	?= "tags/RELEASE_500/final"
 
 all: postgres raw-jit-executor
 	@make --no-print-directory show-config
@@ -92,7 +95,7 @@ do-conf-gtest: gtest.checkout_done llvm
 	cp -r ${SRC_DIR}/gtest ${BUILD_DIR}/gtest
 	cd ${BUILD_DIR}/gtest && \
 		${COMMON_ENV} \
-		cmake .
+		$(CMAKE3) .
 
 do-conf-glog: glog.checkout_done llvm
 # Work around broken project
@@ -113,14 +116,14 @@ do-conf-raw-jit-executor: raw-jit-executor.checkout_done rapidjson glog gtest ll
 	[ -d ${BUILD_DIR}/raw-jit-executor ] || mkdir -p ${BUILD_DIR}/raw-jit-executor
 	cd ${BUILD_DIR}/raw-jit-executor && \
 		${COMMON_ENV} \
-		cmake ${SRC_DIR}/raw-jit-executor \
+		$(CMAKE3) ${SRC_DIR}/raw-jit-executor \
 			-DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
 
 do-conf-rapidjson: rapidjson.checkout_done llvm
 	[ -d ${BUILD_DIR}/rapidjson ] || mkdir -p ${BUILD_DIR}/rapidjson
 	cd ${BUILD_DIR}/rapidjson && \
 		${COMMON_ENV} \
-		cmake ${SRC_DIR}/rapidjson/ \
+		$(CMAKE3) ${SRC_DIR}/rapidjson/ \
 			-DCMAKE_INSTALL_PREFIX=${INSTALL_DIR}
 
 # LLVM_ENABLE_CXX11: Make sure everything compiles using C++11
@@ -129,7 +132,7 @@ do-conf-rapidjson: rapidjson.checkout_done llvm
 # LLVM_REQUIRE_RTTI: required for dynamic_cast
 do-conf-llvm: llvm.checkout_done
 	[ -d ${BUILD_DIR}/llvm ] || mkdir -p ${BUILD_DIR}/llvm
-	cd ${BUILD_DIR}/llvm && cmake ${SRC_DIR}/llvm \
+	cd ${BUILD_DIR}/llvm && $(CMAKE3) ${SRC_DIR}/llvm \
 		-DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
 		-DCMAKE_BUILD_TYPE=RelWithDebInfo \
 		-DLLVM_ENABLE_CXX11=ON \
@@ -139,7 +142,7 @@ do-conf-llvm: llvm.checkout_done
 		-DLLVM_ENABLE_RTTI=ON \
 		-DLLVM_REQUIRES_RTTI=ON \
 		-DBUILD_SHARED_LIBS=ON \
-		-DLLVM_TARGETS_TO_BUILD="X86" \
+		-DLLVM_TARGETS_TO_BUILD="X86;NVPTX" \
 		-Wno-dev
 
 #######################################################################
@@ -152,6 +155,7 @@ src/raw-jit-executor:
 .PRECIOUS: src/rapidjson
 src/rapidjson:
 	eval ${RAPIDJSON_CHECKOUT} ${RAPIDJSON_REVISION} src/rapidjson
+	sed -i '/^elseif (CMAKE_CXX_COMPILER_ID MATCHES \"Clang\")$$/a    set(CMAKE_CXX_FLAGS \"$${CMAKE_CXX_FLAGS} -Wno-zero-as-null-pointer-constant -Wno-shadow\")' src/rapidjson/CMakeLists.txt
 
 .PRECIOUS: src/gtest
 src/gtest:
