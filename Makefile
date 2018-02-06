@@ -11,7 +11,7 @@ CMAKE3		?= cmake3
 
 JOBS		?= $$(( $$(grep processor /proc/cpuinfo|tail -1|cut -d: -f2) + 1))
 
-RAW_CHECKOUT	?= "git clone git@bitbucket.org:manolee/raw-jit-executor.git"
+RAW_CHECKOUT	?= "git clone --recursive git@bitbucket.org:manolee/raw-jit-executor.git"
 RAW_REVISION	?= "-b gpu"
 
 RAPIDJSON_CHECKOUT ?= "git clone https://github.com/miloyip/rapidjson"
@@ -21,7 +21,7 @@ GTEST_CHECKOUT	?= "git clone https://github.com/google/googletest.git"
 GTEST_REVISION	?= "-b release-1.7.0"
 
 GLOG_CHECKOUT	?= "git clone https://github.com/google/glog.git"
-GLOG_REVISION	?= "-b v0.3.4"
+GLOG_REVISION	?= "-b v0.3.5"
 
 POSTGRES_CHECKOUT ?= "git clone https://github.com/postgres/postgres.git"
 POSTGRES_REVISION ?= ""
@@ -105,6 +105,7 @@ do-conf-glog: glog.checkout_done llvm
 	cd ${BUILD_DIR}/glog && \
 		${COMMON_ENV} \
 		./configure --prefix ${INSTALL_DIR}
+	sed -i 's/^#define HAVE_LIB_GFLAGS 1/#undef HAVE_LIB_GFLAGS/g' ${BUILD_DIR}/glog/src/config.h
 
 do-conf-postgres: postgres.checkout_done llvm
 	[ -d ${BUILD_DIR}/postgres ] || mkdir -p ${BUILD_DIR}/postgres
@@ -142,8 +143,9 @@ do-conf-llvm: llvm.checkout_done
 		-DLLVM_ENABLE_RTTI=ON \
 		-DLLVM_REQUIRES_RTTI=ON \
 		-DBUILD_SHARED_LIBS=ON \
+		-DLLVM_USE_INTEL_JITEVENTS:BOOL=ON \
 		-DLLVM_TARGETS_TO_BUILD="X86;NVPTX" \
-		-Wno-dev
+		-Wno-dev 
 
 #######################################################################
 # Checkout sources as needed
@@ -241,7 +243,7 @@ clean:
 do-install-%: %.build_done
 	[ -d ${INSTALL_DIR} ] || mkdir -p ${INSTALL_DIR}
 	cd ${BUILD_DIR}/$$(echo $@ | sed -e 's,do-install-,,') && \
-		make install
+		make -j ${JOBS} install
 
 .PHONY: do-build-%
 do-build-%: %.configure_done
