@@ -3,5 +3,8 @@ opt
 build
 *_done
 src/*
+!src/coordinator/*
+**.pyc
 
-!.gitignore
+.gitignore
+
