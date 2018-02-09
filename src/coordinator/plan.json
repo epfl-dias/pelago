@@ -1,0 +1,292 @@
+{
+    "e": [
+        {
+            "e": {
+                "argNo": -1, 
+                "attributes": [
+                    {
+                        "attrName": "d_datekey", 
+                        "relName": "projection219"
+                    }
+                ], 
+                "expression": "argument", 
+                "type": {
+                    "relName": "projection219", 
+                    "type": "record"
+                }
+            }, 
+            "expression": "recordProjection", 
+            "attribute": {
+                "attrName": "d_datekey", 
+                "relName": "projection219"
+            }
+        }, 
+        {
+            "e": {
+                "argNo": -1, 
+                "attributes": [
+                    {
+                        "attrName": "b", 
+                        "relName": "projection219"
+                    }
+                ], 
+                "expression": "argument", 
+                "type": {
+                    "relName": "projection219", 
+                    "type": "record"
+                }
+            }, 
+            "expression": "recordProjection", 
+            "attribute": {
+                "attrName": "b", 
+                "relName": "projection219"
+            }
+        }
+    ], 
+    "output": [], 
+    "blockwise": false, 
+    "gpu": false, 
+    "operator": "print", 
+    "input": {
+        "blockwise": false, 
+        "granularity": "thread", 
+        "projections": [
+            {
+                "attrName": "d_datekey", 
+                "relName": "projection219", 
+                "isBlock": false
+            }, 
+            {
+                "attrName": "b", 
+                "relName": "projection219", 
+                "isBlock": false
+            }
+        ], 
+        "output": [
+            {
+                "attrName": "d_datekey", 
+                "relName": "projection219"
+            }, 
+            {
+                "attrName": "b", 
+                "relName": "projection219"
+            }
+        ], 
+        "operator": "gpu-to-cpu", 
+        "input": {
+            "e": [
+                {
+                    "e": {
+                        "argNo": -1, 
+                        "attributes": [
+                            {
+                                "attrName": "d_datekey", 
+                                "relName": "inputs/ssbm100/date.csv"
+                            }
+                        ], 
+                        "expression": "argument", 
+                        "type": {
+                            "relName": "inputs/ssbm100/date.csv", 
+                            "type": "record"
+                        }
+                    }, 
+                    "register_as": {
+                        "attrName": "d_datekey", 
+                        "relName": "projection219", 
+                        "type": {
+                            "type": "int"
+                        }, 
+                        "attrNo": -1
+                    }, 
+                    "expression": "recordProjection", 
+                    "attribute": {
+                        "attrName": "d_datekey", 
+                        "relName": "inputs/ssbm100/date.csv"
+                    }
+                }, 
+                {
+                    "register_as": {
+                        "attrName": "b", 
+                        "relName": "projection219", 
+                        "type": {
+                            "type": "int"
+                        }, 
+                        "attrNo": -1
+                    }, 
+                    "expression": "int", 
+                    "v": 8
+                }
+            ], 
+            "blockwise": false, 
+            "gpu": true, 
+            "jumpTo": "cpu", 
+            "relName": "projection219", 
+            "output": [
+                {
+                    "attrName": "d_datekey", 
+                    "relName": "projection219"
+                }, 
+                {
+                    "attrName": "b", 
+                    "relName": "projection219"
+                }
+            ], 
+            "operator": "project", 
+            "input": {
+                "input": {
+                    "operator": "block-to-tuples", 
+                    "input": {
+                        "operator": "cpu-to-gpu", 
+                        "input": {
+                            "blockwise": true, 
+                            "gpu": false, 
+                            "projections": [
+                                {
+                                    "attrName": "d_datekey", 
+                                    "relName": "inputs/ssbm100/date.csv", 
+                                    "isBlock": true
+                                }, 
+                                {
+                                    "attrName": "d_yearmonthnum", 
+                                    "relName": "inputs/ssbm100/date.csv", 
+                                    "isBlock": true
+                                }
+                            ], 
+                            "output": [
+                                {
+                                    "attrName": "d_datekey", 
+                                    "relName": "inputs/ssbm100/date.csv"
+                                }, 
+                                {
+                                    "attrName": "d_yearmonthnum", 
+                                    "relName": "inputs/ssbm100/date.csv"
+                                }
+                            ], 
+                            "operator": "mem-move-device", 
+                            "input": {
+                                "plugin": {
+                                    "type": "block", 
+                                    "name": "inputs/ssbm100/date.csv", 
+                                    "projections": [
+                                        {
+                                            "attrName": "d_datekey", 
+                                            "relName": "inputs/ssbm100/date.csv"
+                                        }, 
+                                        {
+                                            "attrName": "d_yearmonthnum", 
+                                            "relName": "inputs/ssbm100/date.csv"
+                                        }
+                                    ]
+                                }, 
+                                "blockwise": true, 
+                                "jumpTo": "gpu", 
+                                "gpu": false, 
+                                "operator": "scan", 
+                                "output": [
+                                    {
+                                        "attrName": "d_datekey", 
+                                        "relName": "inputs/ssbm100/date.csv"
+                                    }, 
+                                    {
+                                        "attrName": "d_yearmonthnum", 
+                                        "relName": "inputs/ssbm100/date.csv"
+                                    }
+                                ]
+                            }, 
+                            "to_cpu": false
+                        }, 
+                        "blockwise": true, 
+                        "projections": [
+                            {
+                                "attrName": "d_datekey", 
+                                "relName": "inputs/ssbm100/date.csv", 
+                                "isBlock": true
+                            }, 
+                            {
+                                "attrName": "d_yearmonthnum", 
+                                "relName": "inputs/ssbm100/date.csv", 
+                                "isBlock": true
+                            }
+                        ], 
+                        "output": [
+                            {
+                                "attrName": "d_datekey", 
+                                "relName": "inputs/ssbm100/date.csv"
+                            }, 
+                            {
+                                "attrName": "d_yearmonthnum", 
+                                "relName": "inputs/ssbm100/date.csv"
+                            }
+                        ]
+                    }, 
+                    "projections": [
+                        {
+                            "attrName": "d_datekey", 
+                            "relName": "inputs/ssbm100/date.csv"
+                        }, 
+                        {
+                            "attrName": "d_yearmonthnum", 
+                            "relName": "inputs/ssbm100/date.csv"
+                        }
+                    ], 
+                    "gpu": true, 
+                    "output": [
+                        {
+                            "attrName": "d_datekey", 
+                            "relName": "inputs/ssbm100/date.csv"
+                        }, 
+                        {
+                            "attrName": "d_yearmonthnum", 
+                            "relName": "inputs/ssbm100/date.csv"
+                        }
+                    ]
+                }, 
+                "blockwise": false, 
+                "p": {
+                    "expression": "eq", 
+                    "right": {
+                        "expression": "int", 
+                        "v": 199401
+                    }, 
+                    "type": "bool", 
+                    "depends_on": [
+                        {
+                            "attrName": "d_yearmonthnum", 
+                            "relName": "inputs/ssbm100/date.csv"
+                        }
+                    ], 
+                    "left": {
+                        "e": {
+                            "argNo": -1, 
+                            "attributes": [
+                                {
+                                    "attrName": "d_yearmonthnum", 
+                                    "relName": "inputs/ssbm100/date.csv"
+                                }
+                            ], 
+                            "expression": "argument", 
+                            "type": {
+                                "relName": "inputs/ssbm100/date.csv", 
+                                "type": "record"
+                            }
+                        }, 
+                        "expression": "recordProjection", 
+                        "attribute": {
+                            "attrName": "d_yearmonthnum", 
+                            "relName": "inputs/ssbm100/date.csv"
+                        }
+                    }
+                }, 
+                "gpu": true, 
+                "operator": "select", 
+                "output": [
+                    {
+                        "attrName": "d_datekey", 
+                        "relName": "inputs/ssbm100/date.csv"
+                    }
+                ]
+            }
+        }, 
+        "queueSize": 4096
+    }
+}
