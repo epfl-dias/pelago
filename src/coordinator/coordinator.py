@@ -9,6 +9,23 @@ import Queue
 import threading
 import re
 import json
+import socket
+import argparse
+
+# using flags
+# SOCKET = False # Set to False if not using sockets
+# EXECUTOR_STDOUT = PIPE # Set to None to directly redirect stdout for executor
+#                        # process to stdout of terminal
+
+HOST = 'localhost'
+RECV_SIZE = 1024
+
+sock = None
+conn = None
+addr = None
+
+planner = None
+executor = None
 
 history_file = os.path.expanduser(r"~/.rawdb-history")
 
@@ -67,7 +84,7 @@ class ExecutorError(Exception):
 
 
 class Executor(ProcessObj):
-    def __init__(self):
+    def __init__(self, args):
         ProcessObj.__init__(self)
         wd = os.path.join(os.path.dirname(__file__), r"../../opt/raw")
         self.p = Popen(["./rawmain-server"], stdin=PIPE, stdout=PIPE, cwd=wd)
@@ -75,6 +92,8 @@ class Executor(ProcessObj):
         self.t.start()
         self.name = "executor"
         self.wait_for(lambda x: (x == "ready"))
+        if args.socket:
+            conn.send("ready".encode())
 
     def execute_command(self, cmd):
         self.p.stdin.write(cmd + '\n')
@@ -103,6 +122,8 @@ class Executor(ProcessObj):
                 Texec = re.match(r'Texecute[^:]*: *(\d+(.\d+)?)ms', token)
                 Texec = float(Texec.group(1))
             else:
+                if args.socket:
+                    connection.send(token.encode())
                 break
         t2 = time.time()
         return ((t1 - t0) * 1000, (t2 - t1) * 1000, Tcodegen, Texec)
@@ -138,7 +159,7 @@ class SQLParseError(Exception):
 
 
 class Planner(ProcessObj):
-    def __init__(self):
+    def __init__(self, args):
         ProcessObj.__init__(self)
         wd = os.path.join(os.path.dirname(__file__), r"../SQLPlanner")
         cmd = ["java", "-jar", "target/scala-2.12/SQLPlanner-assembly-0.1.jar"]
@@ -181,34 +202,66 @@ class Planner(ProcessObj):
         raise(SQLParseError("Planning failed"))
 
 
+def init_socket(host, port):
+    global sock, conn, addr
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    sock.bind((host, port))
+    sock.listen(1)
+    conn, addr = sock.accept()
+
+    print("Socket connection initialized with: ", addr)
+
+
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--socket',
+                        action="store_true",
+                        help="Set to use socket for communication")
+    parser.add_argument('--port',
+                        action="store",
+                        help="Set localhost port to use",
+                        default=50001,
+                        type=int)
+
+    args = parser.parse_args()
+
+    if(args.socket):
+        init_socket(HOST, args.port)
+    else:
+        try:
+            readline.read_history_file(history_file)
+        except IOError:
+            pass
+        atexit.register(readline.write_history_file, history_file)
+
     try:
-        readline.read_history_file(history_file)
-    except IOError:
-        pass
-    atexit.register(readline.write_history_file, history_file)
-    try:
-        with Executor() as executor:
-            with Planner() as planner:
+        with Executor(args) as executor:
+            with Planner(args) as planner:
                 while True:
-                    line = raw_input('> ').strip()
+                    if(args.socket):
+                        line = conn.recv(RECV_SIZE).decode().strip()
+                    else:
+                        line = raw_input('> ').strip()
                     if (line.lower().startswith("select")):
                         sql_query = line
-                        # hist_len = readline.get_current_history_length()
-                        # readline.remove_history_item(hist_len - 1)
-                        while ';' not in line:
-                            line = raw_input('>> ').strip()
-                            # hist_len = readline.get_current_history_length()
-                            # readline.remove_history_item(hist_len - 1)
-                            sql_query = sql_query + " " + line
-                        sql_query = sql_query.split(';')
-                        if len(sql_query) > 2:
-                            print("error (multiple ';' in a single query)")
-                            continue
-                        if len(sql_query) > 1 and sql_query[1].strip() != "":
-                            print("error (text after query end)")
-                        sql_query = sql_query[0]
-                        readline.add_history(sql_query + ';')
+                        # hlen = readline.get_current_history_length()
+                        # readline.remove_history_item(hlen - 1)
+                        if not args.socket:
+                            while ';' not in line:
+                                line = raw_input('>> ').strip()
+                                # hlen = readline.get_current_history_length()
+                                # readline.remove_history_item(hlen - 1)
+                                sql_query = sql_query + " " + line
+                            sql_query = sql_query.split(';')
+                            qlen = len(sql_query)
+                            if qlen > 2:
+                                print("error (multiple ';' in a single query)")
+                                continue
+                            if qlen > 1 and sql_query[1].strip() != "":
+                                print("error (text after query end)")
+                            sql_query = sql_query[0]
+                            readline.add_history(sql_query + ';')
                         t0 = time.time()
                         plan = planner.get_plan_from_sql(sql_query)
                         t1 = time.time()
@@ -257,3 +310,6 @@ if __name__ == "__main__":
                         executor.execute_command(line[1:])
     except KeyboardInterrupt:
         pass
+    finally:
+        if conn:
+            conn.close()
