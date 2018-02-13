@@ -4,7 +4,7 @@ import logging
 
 input_keys = ["input", "build_input", "probe_input"]
 block_ops = ["scan", "sort"]
-tuple_ops = ["reduce", "hashjoin-chained", "select", "project", "print"]
+tuple_ops = ["reduce", "hashjoin-chained", "select", "project", "print", "groupby"]
 
 
 def annotate_block_operator(obj):

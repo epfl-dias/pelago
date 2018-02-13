@@ -5,6 +5,7 @@ build
 src/*
 !src/coordinator/*
 **.pyc
+src/coordinator/plan.json
 
 .gitignore
 

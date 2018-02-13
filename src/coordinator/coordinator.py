@@ -120,8 +120,7 @@ class Executor(ProcessObj):
                 Texec = float(Texec.group(1))
             else:
                 if args.socket:
-                    token = token+"\n"
-                    conn.send(token.encode())
+                    conn.send((token+"\n").encode())
                 break
         t2 = time.time()
         return ((t1 - t0) * 1000, (t2 - t1) * 1000, Tcodegen, Texec)

@@ -21,7 +21,7 @@ def get_dependencies(obj):
 def get_required_input(obj, output=None):
     possible_inputs = ["input", "left", "right"]
     deps = []
-    if output:
+    if output is not None:
         deps += output
     for key in obj:
         if key not in possible_inputs and key != "tupleType":
@@ -29,7 +29,7 @@ def get_required_input(obj, output=None):
     # deps = [tuple(x.items()) for x in deps]
     # print(attrs)
     # print(deps)
-    if output:
+    if output is not None:
         attrs = [x["attr"] for x in output]
         actual_output = []
         for out in obj["tupleType"]:

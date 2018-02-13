@@ -195,7 +195,60 @@ def fix_rel_name(obj):
     return obj
 
 
+def convert_groupby(obj):
+    conv = {}
+    conv["operator"] = "groupby"
+    exp = []
+    packet = 1
+    conv["k"] = []
+    # key_size = 0
+    for kexpr in obj["groups"]:
+        e = convert_expression(kexpr)
+        conv["k"].append(e)
+        # key_size = key_size + type_size[convert_type(e["type"]["type"])]
+    # conv["w"] = [32 + key_size]
+    for (agg, t) in zip(obj["aggs"], obj["tupleType"]):
+        acc = ""
+        if agg["op"] == "cnt":
+            e = {
+                "expression": convert_type(t["type"]),
+                "v": 1
+            }
+            acc = "sum"
+        else:
+            e = convert_expression(agg["e"])
+            acc = agg["op"]
+            # e["type"] = {
+            #     "type": convert_type(t["type"]]
+            # }
+        e["register_as"] = {
+            "type": {
+                "type": convert_type(t["type"])
+            },
+            "attrNo": -1,
+            "relName": fix_rel_name(t["rel"]),
+            "attrName": t["attr"]
+        }
+        # conv["w"].append(type_size[convert_type(t["type"])])
+        e2 = {
+            "e": e,
+            "m": acc,
+            "packet": packet,
+            "offset": 0
+        }
+        packet = packet + 1
+        exp.append(e2)
+    conv["e"] = exp
+    conv["hash_bits"] = 20                # FIXME: make more adaptive
+    conv["maxInputSize"] = 1024*1024*128  # FIXME: requires upper limit!
+    if "input" in obj:
+        conv["input"] = convert_operator(obj["input"])
+    return conv
+
+
 def convert_agg(obj):
+    if "groups" in obj and len(obj["groups"]) > 0:
+        return convert_groupby(obj)
     conv = {}
     conv["operator"] = "reduce"
     conv["p"] = {"expression": "bool", "v": True}
