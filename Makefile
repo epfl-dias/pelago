@@ -23,13 +23,10 @@ GTEST_REVISION	?= "-b release-1.7.0"
 GLOG_CHECKOUT	?= "git clone https://github.com/google/glog.git"
 GLOG_REVISION	?= "-b v0.3.5"
 
-POSTGRES_CHECKOUT ?= "git clone https://github.com/postgres/postgres.git"
-POSTGRES_REVISION ?= ""
-
 LLVM_CHECKOUT	?= "svn co http://llvm.org/svn/llvm-project"
 LLVM_REVISION	?= "tags/RELEASE_500/final"
 
-all: postgres raw-jit-executor
+all: raw-jit-executor
 	@make --no-print-directory show-config
 
 #######################################################################
@@ -42,12 +39,6 @@ raw-jit-executor: raw-jit-executor.install_done
 	# This is the main tree, so do not shortcut it
 	rm raw-jit-executor.install_done
 	rm raw-jit-executor.build_done
-
-.PHONY: postgres
-postgres: postgres.install_done
-	# We might want to also not shortcut this until the backend is
-	# connected?
-	#rm postgres.build_done
 
 .PHONY: rapidjson
 rapidjson: rapidjson.install_done
@@ -107,12 +98,6 @@ do-conf-glog: glog.checkout_done llvm
 		ac_cv_have_libgflags=0 ac_cv_lib_gflags_main=no ./configure --prefix ${INSTALL_DIR}
 # sed -i 's/^#define HAVE_LIB_GFLAGS 1/#undef HAVE_LIB_GFLAGS/g' ${BUILD_DIR}/glog/src/config.h
 
-do-conf-postgres: postgres.checkout_done llvm
-	[ -d ${BUILD_DIR}/postgres ] || mkdir -p ${BUILD_DIR}/postgres
-	cd ${BUILD_DIR}/postgres && \
-		${COMMON_ENV} \
-		${SRC_DIR}/postgres/configure --prefix ${INSTALL_DIR}
-
 do-conf-raw-jit-executor: raw-jit-executor.checkout_done rapidjson glog gtest llvm
 	[ -d ${BUILD_DIR}/raw-jit-executor ] || mkdir -p ${BUILD_DIR}/raw-jit-executor
 	cd ${BUILD_DIR}/raw-jit-executor && \
@@ -166,10 +151,6 @@ src/gtest:
 .PRECIOUS: src/glog
 src/glog:
 	eval ${GLOG_CHECKOUT} ${GLOG_REVISION} src/glog
-
-.PRECIOUS: src/postgres
-src/postgres:
-	eval ${POSTGRES_CHECKOUT} ${POSTGRES_REVISION} src/postgres
 
 .PRECIOUS: src/llvm
 src/llvm:
