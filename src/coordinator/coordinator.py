@@ -12,10 +12,6 @@ import json
 import socket
 import argparse
 
-# using flags
-# SOCKET = False # Set to False if not using sockets
-# EXECUTOR_STDOUT = PIPE # Set to None to directly redirect stdout for executor
-#                        # process to stdout of terminal
 
 HOST = 'localhost'
 RECV_SIZE = 1024
@@ -93,7 +89,8 @@ class Executor(ProcessObj):
         self.name = "executor"
         self.wait_for(lambda x: (x == "ready"))
         if args.socket:
-            conn.send("ready".encode())
+            print("ready")
+            conn.send("ready\n".encode())
 
     def execute_command(self, cmd):
         self.p.stdin.write(cmd + '\n')
@@ -123,7 +120,8 @@ class Executor(ProcessObj):
                 Texec = float(Texec.group(1))
             else:
                 if args.socket:
-                    connection.send(token.encode())
+                    token = token+"\n"
+                    conn.send(token.encode())
                 break
         t2 = time.time()
         return ((t1 - t0) * 1000, (t2 - t1) * 1000, Tcodegen, Texec)
@@ -241,6 +239,7 @@ if __name__ == "__main__":
                 while True:
                     if(args.socket):
                         line = conn.recv(RECV_SIZE).decode().strip()
+                        print(line)
                     else:
                         line = raw_input('> ').strip()
                     if (line.lower().startswith("select")):
