@@ -165,9 +165,9 @@ def convert_sort(obj):
         #     "type": convert_type(t["type"]]
         # }
         e["register_as"] = {
-            "type": {
-                "type": convert_type(t["type"])
-            },
+            # "type": {
+            #     "type": convert_type(t["type"])
+            # },
             "attrNo": -1,
             "relName": fix_rel_name(t["rel"]),
             "attrName": t["attr"]
@@ -222,9 +222,9 @@ def convert_groupby(obj):
             #     "type": convert_type(t["type"]]
             # }
         e["register_as"] = {
-            "type": {
-                "type": convert_type(t["type"])
-            },
+            # "type": {
+            #     "type": convert_type(t["type"])
+            # },
             "attrNo": -1,
             "relName": fix_rel_name(t["rel"]),
             "attrName": t["attr"]
@@ -268,9 +268,9 @@ def convert_agg(obj):
             #     "type": convert_type(t["type"]]
             # }
         e["register_as"] = {
-            "type": {
-                "type": convert_type(t["type"])
-            },
+            # "type": {
+            #     "type": convert_type(t["type"])
+            # },
             "attrNo": -1,
             "relName": fix_rel_name(t["rel"]),
             "attrName": t["attr"]
@@ -292,9 +292,9 @@ def convert_projection(obj):
     for (t, e) in zip(obj["tupleType"], obj["e"]):
         exp = convert_expression(e)
         exp["register_as"] = {
-            "type": {
-                "type": convert_type(t["type"])
-            },
+            # "type": {
+            #     "type": convert_type(t["type"])
+            # },
             "attrNo": -1,
             "relName": fix_rel_name(t["rel"]),
             "attrName": t["attr"]
@@ -349,9 +349,9 @@ def convert_join(obj):  # FIMXE: for now, right-left is in reverse, for the star
                     out_t = x
                     out_type = convert_type(out_t["type"])
                     e["register_as"] = {
-                        "type": {
-                            "type": out_type
-                        },
+                        # "type": {
+                        #     "type": out_type
+                        # },
                         "attrNo": -1,
                         "relName": fix_rel_name(out_t["rel"]),
                         "attrName": out_t["attr"]
@@ -369,9 +369,9 @@ def convert_join(obj):  # FIMXE: for now, right-left is in reverse, for the star
                     out_t = x
                     out_type = convert_type(out_t["type"])
                     conv["build_k"]["register_as"] = {
-                        "type": {
-                            "type": out_type
-                        },
+                        # "type": {
+                        #     "type": out_type
+                        # },
                         "attrNo": -1,
                         "relName": fix_rel_name(out_t["rel"]),
                         "attrName": out_t["attr"]
@@ -392,9 +392,9 @@ def convert_join(obj):  # FIMXE: for now, right-left is in reverse, for the star
                     out_t = x
                     out_type = convert_type(out_t["type"])
                     e["register_as"] = {
-                        "type": {
-                            "type": out_type
-                        },
+                        # "type": {
+                        #     "type": out_type
+                        # },
                         "attrNo": -1,
                         "relName": fix_rel_name(out_t["rel"]),
                         "attrName": out_t["attr"]
@@ -412,9 +412,9 @@ def convert_join(obj):  # FIMXE: for now, right-left is in reverse, for the star
                     out_t = x
                     out_type = convert_type(out_t["type"])
                     conv["probe_k"]["register_as"] = {
-                        "type": {
-                            "type": out_type
-                        },
+                        # "type": {
+                        #     "type": out_type
+                        # },
                         "attrNo": -1,
                         "relName": fix_rel_name(out_t["rel"]),
                         "attrName": out_t["attr"]
