@@ -45,8 +45,8 @@ def get_required_input(obj, output=None):
                     actual_e.append(e1)
             obj["e"] = actual_e
     else:
-        actual_output = obj["tupleType"]
-    obj["tupleType"] = actual_output
+        actual_output = obj["tupleType"][:]
+    obj["output"] = actual_output
     # print(actual_output)
     for inkey in possible_inputs:
         if inkey in obj:

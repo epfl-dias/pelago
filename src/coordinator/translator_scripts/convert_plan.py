@@ -21,7 +21,8 @@ def convert_operator(obj):
         conv = converters[op](obj)
     else:
         conv = converters["default"](obj)
-    conv["output"] = convert_tuple_type(obj["tupleType"])
+    conv["output"] = convert_tuple_type(obj["output"])
+    conv.pop("tupleType", None)
     return conv
 
 
@@ -149,7 +150,7 @@ def convert_scan(obj):
     conv["plugin"] = {"type": "block", "name": fix_rel_name(obj["name"])}
     conv["plugin"]["projections"] = [{"relName": fix_rel_name(t["rel"]),
                                       "attrName": t["attr"]}
-                                     for t in obj["tupleType"]]
+                                     for t in obj["output"]]
     return conv
 
 
@@ -202,12 +203,20 @@ def convert_groupby(obj):
     packet = 1
     conv["k"] = []
     # key_size = 0
-    for kexpr in obj["groups"]:
+    for (kexpr, t) in zip(obj["groups"], obj["tupleType"]):
         e = convert_expression(kexpr)
+        e["register_as"] = {
+            # "type": {
+            #     "type": convert_type(t["type"])
+            # },
+            "attrNo": -1,
+            "relName": fix_rel_name(t["rel"]),
+            "attrName": t["attr"]
+        }
         conv["k"].append(e)
         # key_size = key_size + type_size[convert_type(e["type"]["type"])]
     # conv["w"] = [32 + key_size]
-    for (agg, t) in zip(obj["aggs"], obj["tupleType"]):
+    for (agg, t) in zip(obj["aggs"], obj["tupleType"][len(obj["groups"]):]):
         acc = ""
         if agg["op"] == "cnt":
             e = {
@@ -239,8 +248,8 @@ def convert_groupby(obj):
         packet = packet + 1
         exp.append(e2)
     conv["e"] = exp
-    conv["hash_bits"] = 20                # FIXME: make more adaptive
-    conv["maxInputSize"] = 1024*1024*128  # FIXME: requires upper limit!
+    conv["hash_bits"] = 10              # FIXME: make more adaptive
+    conv["maxInputSize"] = 1024*128     # FIXME: requires upper limit!
     if "input" in obj:
         conv["input"] = convert_operator(obj["input"])
     return conv
@@ -286,10 +295,10 @@ def convert_agg(obj):
 def convert_projection(obj):
     conv = {}
     conv["operator"] = "project"
-    conv["relName"] = fix_rel_name(obj["tupleType"][0]["rel"])
+    conv["relName"] = fix_rel_name(obj["output"][0]["rel"])
     conv["e"] = []
-    assert(len(obj["tupleType"]) == len(obj["e"]))
-    for (t, e) in zip(obj["tupleType"], obj["e"]):
+    assert(len(obj["output"]) == len(obj["e"]))
+    for (t, e) in zip(obj["output"], obj["e"]):
         exp = convert_expression(e)
         exp["register_as"] = {
             # "type": {
@@ -337,7 +346,7 @@ def convert_join(obj):  # FIMXE: for now, right-left is in reverse, for the star
         "type": convert_type(obj["cond"]["left"]["type"])
     }
     build_e = []
-    leftTuple = obj["right"]["tupleType"]
+    leftTuple = obj["right"]["output"]
     leftAttr = obj["cond"]["right"].get("attr", None)
     build_packet = 1
     conv["build_w"] = [32 + type_size[conv["build_k"]["type"]["type"]]]
@@ -380,7 +389,7 @@ def convert_join(obj):  # FIMXE: for now, right-left is in reverse, for the star
     conv["build_e"] = build_e
     conv["build_input"] = convert_operator(obj["right"])
     probe_e = []
-    rightTuple = obj["left"]["tupleType"]
+    rightTuple = obj["left"]["output"]
     rightAttr = obj["cond"]["left"].get("attr", None)
     probe_packet = 1
     conv["probe_w"] = [32 + type_size[conv["probe_k"]["type"]["type"]]]
@@ -428,7 +437,7 @@ def convert_join(obj):  # FIMXE: for now, right-left is in reverse, for the star
 def translate_plan(obj):
     out = convert_operator(obj)
     conv = {"operator": "print", "e": []}
-    for e in obj["tupleType"]:
+    for e in obj["output"]:
         conv["e"].append(convert_expression(e))
     conv["input"] = out
     conv["output"] = []
