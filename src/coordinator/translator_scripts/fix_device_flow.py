@@ -11,10 +11,10 @@ def deviceaware_operator(obj):
     for inp in input_keys:
         if inp in obj:
             inpobj = obj[inp]
-            # if "gpu" not in obj:
-            #     continue
-            # if "gpu" not in inpobj:
-            #     continue
+            if "gpu" not in obj:
+                continue
+            if "gpu" not in inpobj:
+                continue
             if obj["gpu"] != inpobj["gpu"]:
                 obj[inp] = {}
                 if obj["gpu"]:

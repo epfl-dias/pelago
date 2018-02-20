@@ -1,6 +1,8 @@
 import json
 import logging
 
+has_seen_groupby = False  # Calcite generates deep-right plans for groupby!
+
 
 def convert_tuple_type(obj):
     return [{"relName": fix_rel_name(t["rel"]), "attrName": t["attr"]} for t in obj]
@@ -29,9 +31,12 @@ def convert_operator(obj):
 def convert_default(obj):
     logging.warning("No converter for operator: " + obj["operator"])
     possible_inputs = ["input", "left", "right"]
+    lineest = 1
     for inp in possible_inputs:
         if inp in obj:
             obj[inp] = convert_operator(obj[inp])
+            lineest = lineest * obj[inp]
+    obj["max_line_estimate"] = lineest
     return obj
 
 
@@ -125,6 +130,7 @@ def convert_expression(obj, parent=None):
     # obj["e"] = convert_expression(obj["e"])
     converters = {
         "mult": convert_expr_binary,
+        "div": convert_expr_binary,
         "eq": convert_expr_binary,
         "le": convert_expr_binary,
         "lt": convert_expr_binary,
@@ -146,6 +152,11 @@ def convert_expression(obj, parent=None):
 
 
 linehints = {
+    "dates": 2556,
+    "lineorder": 600038145,
+    "supplier": 200000,
+    "part": 1400000,
+    "customer": 3000000,
     "dates_csv": 2556,
     "lineorder_csv": 600038145,
     "supplier_csv": 200000,
@@ -177,6 +188,7 @@ csvs = [
 
 def convert_scan(obj):
     conv = {"operator": "scan"}
+    conv["max_line_estimate"] = linehints[obj["name"]]
     if obj["name"] in csvs:
         conv["plugin"] = {"type": "csv", "name": fix_rel_name(obj["name"])}
         conv["plugin"]["projections"] = [{"relName": fix_rel_name(t["rel"]),
@@ -218,6 +230,7 @@ def convert_sort(obj):
     conv["direction"] = d
     if "input" in obj:
         conv["input"] = convert_operator(obj["input"])
+    conv["max_line_estimate"] = conv["input"]["max_line_estimate"]
     return conv
 
 
@@ -228,6 +241,9 @@ def fix_rel_name(obj):
 
 
 def convert_groupby(obj):
+    global has_seen_groupby
+    prev_has_seen_groupby = has_seen_groupby
+    has_seen_groupby = True
     conv = {}
     conv["operator"] = "groupby"
     exp = []
@@ -283,6 +299,8 @@ def convert_groupby(obj):
     conv["maxInputSize"] = 1024*128     # FIXME: requires upper limit!
     if "input" in obj:
         conv["input"] = convert_operator(obj["input"])
+    has_seen_groupby = prev_has_seen_groupby
+    conv["max_line_estimate"] = conv["input"]["max_line_estimate"]
     return conv
 
 
@@ -320,6 +338,7 @@ def convert_agg(obj):
     conv["accumulator"] = acc
     if "input" in obj:
         conv["input"] = convert_operator(obj["input"])
+    conv["max_line_estimate"] = 1
     return conv
 
 
@@ -341,6 +360,7 @@ def convert_projection(obj):
         }
         conv["e"].append(exp)
     conv["input"] = convert_operator(obj["input"])
+    conv["max_line_estimate"] = conv["input"]["max_line_estimate"]
     return conv
 
 
@@ -349,6 +369,7 @@ def convert_selection(obj):
     conv["operator"] = "select"
     conv["p"] = convert_expression(obj["cond"])
     conv["input"] = convert_operator(obj["input"])
+    conv["max_line_estimate"] = conv["input"]["max_line_estimate"]
     return conv
 
 
@@ -360,6 +381,18 @@ type_size = {
 }
 
 
+def calcite_build_side(est_left, est_right):
+    if est_left < est_right:
+        return "left"
+    return "right"
+
+
+def calcite_probe_side(est_left, est_right):
+    if est_left < est_right:
+        return "right"
+    return "left"
+
+
 def convert_join(obj):  # FIMXE: for now, right-left is in reverse, for the star schema
     conv = {}
     conv["operator"] = "hashjoin-chained"
@@ -368,17 +401,25 @@ def convert_join(obj):  # FIMXE: for now, right-left is in reverse, for the star
     if (obj["cond"]["expression"] != "eq"):
         print(obj["cond"]["expression"])
         assert(False)
-    conv["build_k"] = convert_expression(obj["cond"]["right"])
+    join_input = {}
+    join_input["left"] = convert_operator(obj["left"])
+    join_input["right"] = convert_operator(obj["right"])
+    est_left = join_input["left"]["max_line_estimate"]
+    est_right = join_input["right"]["max_line_estimate"]
+    build_side = calcite_build_side(est_left, est_right)
+    probe_side = calcite_probe_side(est_left, est_right)
+    conv["max_line_estimate"] = est_right * est_left
+    conv["build_k"] = convert_expression(obj["cond"][build_side])
     conv["build_k"]["type"] = {
-        "type": convert_type(obj["cond"]["right"]["type"])
+        "type": convert_type(obj["cond"][build_side]["type"])
     }
-    conv["probe_k"] = convert_expression(obj["cond"]["left"])
+    conv["probe_k"] = convert_expression(obj["cond"][probe_side])
     conv["probe_k"]["type"] = {
-        "type": convert_type(obj["cond"]["left"]["type"])
+        "type": convert_type(obj["cond"][probe_side]["type"])
     }
     build_e = []
-    leftTuple = obj["right"]["output"]
-    leftAttr = obj["cond"]["right"].get("attr", None)
+    leftTuple = obj[build_side]["output"]
+    leftAttr = obj["cond"][build_side].get("attr", None)
     build_packet = 1
     conv["build_w"] = [32 + type_size[conv["build_k"]["type"]["type"]]]
     for t in leftTuple:
@@ -418,10 +459,10 @@ def convert_join(obj):  # FIMXE: for now, right-left is in reverse, for the star
                     }
                     break
     conv["build_e"] = build_e
-    conv["build_input"] = convert_operator(obj["right"])
+    conv["build_input"] = join_input[build_side]
     probe_e = []
-    rightTuple = obj["left"]["output"]
-    rightAttr = obj["cond"]["left"].get("attr", None)
+    rightTuple = obj[probe_side]["output"]
+    rightAttr = obj["cond"][probe_side].get("attr", None)
     probe_packet = 1
     conv["probe_w"] = [32 + type_size[conv["probe_k"]["type"]["type"]]]
     for t in rightTuple:
@@ -461,7 +502,7 @@ def convert_join(obj):  # FIMXE: for now, right-left is in reverse, for the star
                     }
                     break
     conv["probe_e"] = probe_e
-    conv["probe_input"] = convert_operator(obj["left"])
+    conv["probe_input"] = join_input[probe_side]
     return conv
 
 
