@@ -145,12 +145,52 @@ def convert_expression(obj, parent=None):
     return converters["default"](obj, parent)
 
 
+linehints = {
+    "dates_csv": 2556,
+    "lineorder_csv": 600038145,
+    "supplier_csv": 200000,
+    "part_csv": 1400000,
+    "customer_csv": 3000000
+}
+
+rel_names = {
+    "dates": "inputs/ssbm100/date.csv",
+    "lineorder": "inputs/ssbm100/lineorder.csv",
+    "supplier": "inputs/ssbm100/supplier.csv",
+    "part": "inputs/ssbm100/part.csv",
+    "customer": "inputs/ssbm100/customer.csv",
+    "dates_csv": "inputs/ssbm100/date2.tbl",
+    "lineorder_csv": "inputs/ssbm100/lineorder2.tbl",
+    "supplier_csv": "inputs/ssbm100/supplier2.tbl",
+    "part_csv": "inputs/ssbm100/part2.tbl",
+    "customer_csv": "inputs/ssbm100/customer2.tbl"
+}
+
+csvs = [
+    "dates_csv",
+    "lineorder_csv",
+    "supplier_csv",
+    "part_csv",
+    "customer_csv"
+]
+
+
 def convert_scan(obj):
     conv = {"operator": "scan"}
-    conv["plugin"] = {"type": "block", "name": fix_rel_name(obj["name"])}
-    conv["plugin"]["projections"] = [{"relName": fix_rel_name(t["rel"]),
-                                      "attrName": t["attr"]}
-                                     for t in obj["output"]]
+    if obj["name"] in csvs:
+        conv["plugin"] = {"type": "csv", "name": fix_rel_name(obj["name"])}
+        conv["plugin"]["projections"] = [{"relName": fix_rel_name(t["rel"]),
+                                          "attrName": t["attr"]}
+                                         for t in obj["output"]]
+        conv["plugin"]["policy"] = 2
+        conv["plugin"]["lines"] = linehints[obj["name"]]
+        conv["plugin"]["delimiter"] = "|"
+        conv["plugin"]["brackets"] = False
+    else:
+        conv["plugin"] = {"type": "block", "name": fix_rel_name(obj["name"])}
+        conv["plugin"]["projections"] = [{"relName": fix_rel_name(t["rel"]),
+                                          "attrName": t["attr"]}
+                                         for t in obj["output"]]
     return conv
 
 
@@ -179,15 +219,6 @@ def convert_sort(obj):
     if "input" in obj:
         conv["input"] = convert_operator(obj["input"])
     return conv
-
-
-rel_names = {
-    "dates": "inputs/ssbm100/date.csv",
-    "lineorder": "inputs/ssbm100/lineorder.csv",
-    "supplier": "inputs/ssbm100/supplier.csv",
-    "part": "inputs/ssbm100/part.csv",
-    "customer": "inputs/ssbm100/customer.csv"
-}
 
 
 def fix_rel_name(obj):

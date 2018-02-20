@@ -24,14 +24,33 @@ def flowaware_operator(obj):
                 projs = []
                 for t in inpobj["output"]:
                     projs.append({
-                        "relName": t["relName"],
-                        "attrName": t["attrName"],
-                        })
+                                    "expression": "recordProjection",
+                                    "e": {
+                                        "expression": "argument",
+                                        "argNo": -1,
+                                        "type": {
+                                            "type": "record",
+                                            "relName": t["relName"]
+                                        },
+                                        "attributes": [{
+                                            "relName": t["relName"],
+                                            "attrName": t["attrName"]
+                                        }]
+                                    },
+                                    "attribute": {
+                                        "relName": t["relName"],
+                                        "attrName": t["attrName"]
+                                    }
+                                })
                 obj[inp]["projections"] = projs
                 obj[inp]["input"] = flowaware_operator(inpobj)
-                obj[inp]["output"] = projs
-                if "gpu" in obj:
+                obj[inp]["output"] = inpobj["output"][:]
+                if "gpu" in inpobj:
+                    obj[inp]["gpu"] = inpobj["gpu"]
+                elif "gpu" in obj:
                     obj[inp]["gpu"] = obj["gpu"]
+                else:
+                    assert(False)
             else:
                 obj[inp] = flowaware_operator(inpobj)
     return obj

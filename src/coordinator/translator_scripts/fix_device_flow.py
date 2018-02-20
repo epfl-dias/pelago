@@ -23,7 +23,8 @@ def deviceaware_operator(obj):
                     obj[inp]["operator"] = "gpu-to-cpu"
                     obj[inp]["queueSize"] = 4096
                     obj[inp]["granularity"] = "thread"  # FIMXE: not always!
-                isBlock = inpobj["blockwise"]
+                # isBlock = (inpobj["operator"] != "reduce")  # inpobj["blockwise"]
+                isBlock = (inpobj["operator"] != "reduce") and ("gpu" not in inpobj or not inpobj["gpu"])  # inpobj["blockwise"]
                 projs = []
                 for t in inpobj["output"]:
                     projs.append({
