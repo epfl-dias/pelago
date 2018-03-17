@@ -7,10 +7,13 @@ block_ops = ["scan"]
 tuple_ops = ["reduce", "hashjoin-chained", "select", "project", "groupby"]
 
 
-def fixlocality_operator(obj, target=None):
+def fixlocality_operator(obj, explicit_memcpy=True, target=None):
     if obj["operator"] == "block-to-tuples":
-        assert(target is None)
+        # if target is not None:
+        #     print(target)
+        # assert(target is None)
         if not obj["gpu"]:  # cpu
+            print("->>" + obj["input"]["operator"])
             mem_mov = {"operator": "mem-move-device"}
             mem_mov["to_cpu"] = True
             mem_mov["projections"] = []
@@ -20,35 +23,68 @@ def fixlocality_operator(obj, target=None):
                     "attrName": t["attrName"],
                     "isBlock": True
                 })
-            mem_mov["input"] = fixlocality_operator(obj["input"], None)
+            mem_mov["input"] = fixlocality_operator(obj["input"], explicit_memcpy, None)
             mem_mov["output"] = obj["output"]
             mem_mov["blockwise"] = True
             mem_mov["gpu"] = False
+            if "partitioning" in obj["input"]:
+                mem_mov["partitioning"] = obj["input"]["partitioning"]
+                mem_mov["dop"] = obj["dop"]
             obj["input"] = mem_mov
         else:
-            obj["input"] = fixlocality_operator(obj["input"], "gpu")
-    elif target:
-        if obj["operator"] == "cpu-to-gpu" or not obj["gpu"]:
-            for inp in input_keys:
-                if inp in obj:
-                    mem_mov = {"operator": "mem-move-device"}
-                    mem_mov["to_cpu"] = (target != "gpu")
-                    mem_mov["projections"] = []
+            obj["input"] = fixlocality_operator(obj["input"], explicit_memcpy, "gpu")
+    elif target and (obj["operator"] == "cpu-to-gpu" or not obj["gpu"]):  # and explicit_memcpy
+        for inp in input_keys:
+            if inp in obj:
+                # if not explicit_memcpy and obj[inp]["operator"] == "split" and obj[inp]["input"]["operator"] == "scan":
+                #     print("->" + obj[inp]["operator"] + " " + obj[inp]["input"]["operator"])
+                #     print(obj["partitioning"])
+                #     print(obj[inp]["projections"])
+                #     # print(obj["part"])
+                #     print(obj.keys())
+                # if not explicit_memcpy and obj[inp]["operator"] == "split" and obj[inp]["input"]["operator"] == "scan" and "inputs/ssbm100/lineorder.csv" == obj[inp]["projections"][0]["relName"]:
+                #     obj[inp] = fixlocality_operator(obj[inp], explicit_memcpy, None)
+                #     continue
+                if (target == "gpu"):
+                    mem_mov_local_to = {"operator": "mem-move-local-to"}
+                    mem_mov_local_to["to_cpu"] = (target != "gpu")
+                    mem_mov_local_to["projections"] = []
                     for t in obj["output"]:
-                        mem_mov["projections"].append({
+                        mem_mov_local_to["projections"].append({
                             "relName": t["relName"],
                             "attrName": t["attrName"],
                             "isBlock": True
                         })
-                    mem_mov["input"] = fixlocality_operator(obj[inp], None)
-                    mem_mov["output"] = obj["output"]
-                    mem_mov["blockwise"] = True
-                    mem_mov["gpu"] = False
-                    obj[inp] = mem_mov
+                    mem_mov_local_to["input"] = fixlocality_operator(obj[inp], explicit_memcpy, None)
+                    mem_mov_local_to["output"] = obj["output"]
+                    mem_mov_local_to["blockwise"] = True
+                    mem_mov_local_to["gpu"] = False
+                    if "partitioning" in obj["input"]:
+                        mem_mov_local_to["partitioning"] = obj["input"]["partitioning"]
+                        mem_mov_local_to["dop"] = obj["dop"]
+                else:
+                    mem_mov_local_to = fixlocality_operator(obj[inp], explicit_memcpy, None)
+                mem_mov = {"operator": "mem-move-device"}
+                mem_mov["to_cpu"] = (target != "gpu")
+                mem_mov["projections"] = []
+                for t in obj["output"]:
+                    mem_mov["projections"].append({
+                        "relName": t["relName"],
+                        "attrName": t["attrName"],
+                        "isBlock": True
+                    })
+                mem_mov["input"] = mem_mov_local_to
+                mem_mov["output"] = obj["output"]
+                mem_mov["blockwise"] = True
+                mem_mov["gpu"] = False
+                if "partitioning" in obj[inp]:
+                    mem_mov["partitioning"] = obj[inp]["partitioning"]
+                    mem_mov["dop"] = obj[inp]["dop"]
+                obj[inp] = mem_mov
     else:
         for inp in input_keys:
             if inp in obj:
-                obj[inp] = fixlocality_operator(obj[inp], target)
+                obj[inp] = fixlocality_operator(obj[inp], explicit_memcpy, target)
     return obj
 
 

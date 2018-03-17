@@ -11,6 +11,7 @@ import re
 import json
 import socket
 import argparse
+from translator_scripts.list_inputs import createTest
 
 
 HOST = 'localhost'
@@ -26,11 +27,18 @@ executor = None
 history_file = os.path.expanduser(r"~/.rawdb-history")
 
 timings = False
+timings_csv = False
 q = Queue.Queue()
 
 kws = ["result in file ", "error", "ready", "T"]
 
 explicit_memcpy = True
+parallel = True
+cpu_only = False
+
+gentests = False
+gentests_folder = "."
+gentests_exec = False
 
 
 def quit(execu, plan):
@@ -186,15 +194,9 @@ class Planner(ProcessObj):
                             fplan.write(json.dumps(json.loads(jsonstr),
                                                    indent=4))
                         jplan = jsonplanner.plan(jsonstr, False)            \
-                                           .get_required_input()            \
-                                           .translate_plan()                \
-                                           .annotate_block_operator()       \
-                                           .annotate_device_jumps_operator()\
-                                           .annotate_device_operator()      \
-                                           .deviceaware_operator()          \
-                                           .flowaware_operator()
-                        if explicit_memcpy:
-                            jplan = jplan.fixlocality_operator()
+                                           .prepare(explicit_memcpy,
+                                                    parallel,
+                                                    cpu_only)
                         return jplan
         raise(SQLParseError("Planning failed"))
 
@@ -241,13 +243,34 @@ if __name__ == "__main__":
                         print(line)
                     else:
                         line = raw_input('> ').strip()
-                    if (line.lower().startswith("select")):
+                    is_test = re.sub('\s+', ' ', line.lower())                \
+                                .startswith(".create test ")
+                    is_test = is_test or re.sub('\s+', ' ', line.lower())     \
+                                           .startswith("create test ")
+                    if (line.lower().startswith("select ") or is_test):
+                        create_test = None
+                        if not line.lower().startswith("select"):
+                            line = re.sub('\s+', ' ', line.lower())
+                            m = re.match(".?create test ([a-zA-Z_0-9%]+) from(.*)", line)
+                            if m is None:
+                                print("error (malformed .create test)")
+                                continue
+                            create_test = m.group(1)
+                            line = m.group(2).strip()
+                        if not gentests:
+                            create_test = None
                         sql_query = line
+                        bare_sql_input = "// Query:"
+                        if line.strip() != "":
+                            bare_sql_input = bare_sql_input + "\n//     " + line
                         # hlen = readline.get_current_history_length()
                         # readline.remove_history_item(hlen - 1)
                         if not args.socket:
                             while ';' not in line:
-                                line = raw_input('>> ').strip()
+                                line = raw_input('>> ')
+                                bare_sql_input = bare_sql_input + "\n//     "
+                                bare_sql_input = bare_sql_input + line
+                                line = line.strip()
                                 # hlen = readline.get_current_history_length()
                                 # readline.remove_history_item(hlen - 1)
                                 sql_query = sql_query + " " + line
@@ -263,25 +286,61 @@ if __name__ == "__main__":
                         t0 = time.time()
                         plan = planner.get_plan_from_sql(sql_query)
                         t1 = time.time()
-                        (wplan_ms, wexec_ms,
-                            Tcodegen, Texec) = executor.execute_plan(plan)
-                        if (timings):
-                            t2 = time.time()
-                            total_ms = (t2 - t0) * 1000
-                            plan_ms = (t1 - t0) * 1000
-                            print("Total time: " +
-                                  '%.2f' % (total_ms) +
-                                  "ms, Planning time: " +
-                                  '%.2f' % (plan_ms) +
-                                  "ms, Flush plan time: " +
-                                  '%.2f' % (wplan_ms) +
-                                  "ms, Total executor time: " +
-                                  '%.2f' % (wexec_ms) +
-                                  "ms, Codegen time: " +
-                                  '%.2f' % (Tcodegen) +
-                                  "ms, Execution time: " +
-                                  '%.2f' % (Texec) +
-                                  "ms")
+                        if create_test is None or gentests_exec:
+                            (wplan_ms, wexec_ms,
+                                Tcodegen, Texec) = executor.execute_plan(plan)
+                            if (timings):
+                                t2 = time.time()
+                                total_ms = (t2 - t0) * 1000
+                                plan_ms = (t1 - t0) * 1000
+                                if timings_csv:
+                                    print('%.2f,' % (total_ms) +
+                                          '%.2f,' % (plan_ms) +
+                                          '%.2f,' % (wplan_ms) +
+                                          '%.2f,' % (wexec_ms) +
+                                          '%.2f,' % (Tcodegen) +
+                                          '%.2f' % (Texec))
+                                else:
+                                    print("Total time: " +
+                                          '%.2f' % (total_ms) +
+                                          "ms, Planning time: " +
+                                          '%.2f' % (plan_ms) +
+                                          "ms, Flush plan time: " +
+                                          '%.2f' % (wplan_ms) +
+                                          "ms, Total executor time: " +
+                                          '%.2f' % (wexec_ms) +
+                                          "ms, Codegen time: " +
+                                          '%.2f' % (Tcodegen) +
+                                          "ms, Execution time: " +
+                                          '%.2f' % (Texec) +
+                                          "ms")
+                        if create_test is not None:
+                            ident = ""
+                            if '%' in create_test:
+                                if parallel:
+                                    ident = ident + "par"
+                                else:
+                                    ident = ident + "seq"
+                                if explicit_memcpy:
+                                    ident = ident + "_cpy"
+                                else:
+                                    ident = ident + "_uva"
+                                if cpu_only:
+                                    ident = ident + "_cpu"
+                            create_test = create_test.replace('%', ident)
+                            plan_path = gentests_folder + "/plans/" + create_test + "_plan.json"
+                            with open(plan_path, 'w') as p:
+                                p.write(plan.dump())
+                            with open(gentests_folder + "/" + create_test + "_test.cpp", 'w') as p:
+                                p.write("// Options during test generation:"
+                                        + "\n//     parallel    : "
+                                        + str(parallel)
+                                        + "\n//     memcpy      : "
+                                        + str(explicit_memcpy)
+                                        + "\n//     cpu_only    : "
+                                        + str(cpu_only) + "\n")
+                                p.write(bare_sql_input)
+                                p.write(createTest(plan_path) + "\n")
                     elif (line.lower() in ["quit", ".quit", "exit", ".exit",
                                            ".q", "q"]):
                         break
@@ -290,9 +349,19 @@ if __name__ == "__main__":
                             timings = True
                         elif (line.lower() == ".timings off"):
                             timings = False
+                        elif (line.lower() == ".timings csv on"):
+                            timings = True
+                            timings_csv = True
+                        elif (line.lower() == ".timings csv off"):
+                            timings = True
+                            timings_csv = False
+                        elif (line.lower() == ".timings csv"):
+                            timings = True
+                            timings_csv = True
                         else:
                             print("error (unknown option for timings)")
-                        print("Show timings set to " + str(timings))
+                        print("Show timings set to " + str(timings) +
+                              " (csv format? " + str(timings_csv) + ")")
                     elif (line.lower().startswith(".memcpy ")):
                         if (line.lower() == ".memcpy query"):
                             pass
@@ -304,6 +373,42 @@ if __name__ == "__main__":
                             print("error (unknown option for memcpy)")
                         print("Explicit memcpys: " +
                               str(explicit_memcpy))
+                    elif (line.lower().startswith(".parallel ")):
+                        if (line.lower() == ".parallel query"):
+                            pass
+                        elif (line.lower() == ".parallel on"):
+                            parallel = True
+                        elif (line.lower() == ".parallel off"):
+                            parallel = False
+                        else:
+                            print("error (unknown option for parallel execution)")
+                        print("Parallel execution: " + str(parallel))
+                    elif (line.lower().startswith(".gentests ")):
+                        if (line.lower() == ".gentests query"):
+                            pass
+                        elif (line.lower() == ".gentests on"):
+                            gentests = True
+                        elif (line.lower() == ".gentests off"):
+                            gentests = False
+                        elif (line.lower().startswith(".gentests path ")):
+                            gentests_folder = line[len(".gentests path "):]
+                        elif (line.lower() == ".gentests no-execute"):
+                            gentests_exec = False
+                        elif (line.lower() == ".gentests execute"):
+                            gentests_exec = True
+                        else:
+                            print("error (unknown option for test generation)")
+                        print("Generate tests: " + str(gentests))
+                    elif (line.lower().startswith(".cpuonly ")):
+                        if (line.lower() == ".cpuonly query"):
+                            pass
+                        elif (line.lower() == ".cpuonly on"):
+                            cpu_only = True
+                        elif (line.lower() == ".cpuonly off"):
+                            cpu_only = False
+                        else:
+                            print("error (unknown option for cpuonly execution)")
+                        print("Cpu only execution: " + str(cpu_only))
                     elif (line.lower().startswith('.')):
                         executor.execute_command(line[1:])
     except KeyboardInterrupt:

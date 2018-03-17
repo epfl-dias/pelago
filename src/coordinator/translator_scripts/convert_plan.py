@@ -1,7 +1,7 @@
 import json
 import logging
-
-has_seen_groupby = False  # Calcite generates deep-right plans for groupby!
+from math import *
+import copy
 
 
 def convert_tuple_type(obj):
@@ -100,55 +100,60 @@ def convert_expr_varchar(obj, parent):
 def convert_expression(obj, parent=None):
     if "rel" in obj and "attr" in obj:
         # print(obj)
-        return {
-                    "expression": "recordProjection",
-                    "e": {
-                        "expression": "argument",
-                        "argNo": -1,
-                        "type": {
-                            "type": "record",
-                            "relName": fix_rel_name(obj["rel"])
-                        },
-                        "attributes": [{
-                            "relName": fix_rel_name(obj["rel"]),
-                            "attrName": obj["attr"]
-                        }]
-                    },
-                    "attribute": {
-                        "relName": fix_rel_name(obj["rel"]),
-                        "attrName": obj["attr"]
-                    }
-                }
-    if "depends_on" in obj:
-        dep_new = []
-        for d in obj["depends_on"]:
-            dep_new.append({
-                "relName": fix_rel_name(d["rel"]),
-                "attrName": d["attr"]
-            })
-        obj["depends_on"] = dep_new
-    # obj["e"] = convert_expression(obj["e"])
-    converters = {
-        "mult": convert_expr_binary,
-        "div": convert_expr_binary,
-        "eq": convert_expr_binary,
-        "le": convert_expr_binary,
-        "lt": convert_expr_binary,
-        "gt": convert_expr_binary,
-        "ge": convert_expr_binary,
-        "or": convert_expr_binary,
-        "and": convert_expr_binary,
-        "sub": convert_expr_binary,
-        "add": convert_expr_binary,
-        "INTEGER": convert_expr_int,
-        "VARCHAR": convert_expr_varchar,
-        "default": convert_expr_default
-    }
-    if obj["expression"].startswith("CHAR("):
-        return convert_expr_varchar(obj, parent)
-    if obj["expression"] in converters:
-        return converters[obj["expression"]](obj, parent)
-    return converters["default"](obj, parent)
+        x = {
+            "expression": "recordProjection",
+            "e": {
+                "expression": "argument",
+                "argNo": -1,
+                "type": {
+                    "type": "record",
+                    "relName": fix_rel_name(obj["rel"])
+                },
+                "attributes": [{
+                    "relName": fix_rel_name(obj["rel"]),
+                    "attrName": obj["attr"]
+                }]
+            },
+            "attribute": {
+                "relName": fix_rel_name(obj["rel"]),
+                "attrName": obj["attr"]
+            }
+        }
+    else:
+        if "depends_on" in obj:
+            dep_new = []
+            for d in obj["depends_on"]:
+                dep_new.append({
+                    "relName": fix_rel_name(d["rel"]),
+                    "attrName": d["attr"]
+                })
+            obj["depends_on"] = dep_new
+        # obj["e"] = convert_expression(obj["e"])
+        converters = {
+            "mult": convert_expr_binary,
+            "div": convert_expr_binary,
+            "eq": convert_expr_binary,
+            "le": convert_expr_binary,
+            "lt": convert_expr_binary,
+            "gt": convert_expr_binary,
+            "ge": convert_expr_binary,
+            "or": convert_expr_binary,
+            "and": convert_expr_binary,
+            "sub": convert_expr_binary,
+            "add": convert_expr_binary,
+            "INTEGER": convert_expr_int,
+            "VARCHAR": convert_expr_varchar,
+            "default": convert_expr_default
+        }
+        if obj["expression"].startswith("CHAR("):
+            x = convert_expr_varchar(obj, parent)
+        elif obj["expression"] in converters:
+            x = converters[obj["expression"]](obj, parent)
+        else:
+            x = converters["default"](obj, parent)
+    if "register_as" in obj:
+        x["register_as"] = obj["register_as"]
+    return x
 
 
 linehints = {
@@ -161,7 +166,14 @@ linehints = {
     "lineorder_csv": 600038145,
     "supplier_csv": 200000,
     "part_csv": 1400000,
-    "customer_csv": 3000000
+    "customer_csv": 3000000,
+    "sailors": 10,
+    "reserves": 10,
+    "inputs/ssbm100/date.csv": 2556,
+    "inputs/ssbm100/lineorder.csv": 600038145,
+    "inputs/ssbm100/supplier.csv": 200000,
+    "inputs/ssbm100/part.csv": 1400000,
+    "inputs/ssbm100/customer.csv": 3000000
 }
 
 rel_names = {
@@ -174,30 +186,62 @@ rel_names = {
     "lineorder_csv": "inputs/ssbm100/lineorder2.tbl",
     "supplier_csv": "inputs/ssbm100/supplier2.tbl",
     "part_csv": "inputs/ssbm100/part2.tbl",
-    "customer_csv": "inputs/ssbm100/customer2.tbl"
+    "customer_csv": "inputs/ssbm100/customer2.tbl",
+    "sailors": "inputs/sailors.csv",
+    "reserves": "inputs/reserves.csv",
+    "inputs/ssbm100/date.csv": "inputs/ssbm100/date.csv",
+    "inputs/ssbm100/lineorder.csv": "inputs/ssbm100/lineorder.csv",
+    "inputs/ssbm100/supplier.csv": "inputs/ssbm100/supplier.csv",
+    "inputs/ssbm100/part.csv": "inputs/ssbm100/part.csv",
+    "inputs/ssbm100/customer.csv": "inputs/ssbm100/customer.csv"
 }
 
-csvs = [
-    "dates_csv",
-    "lineorder_csv",
-    "supplier_csv",
-    "part_csv",
-    "customer_csv"
-]
+csvs = {
+    "dates_csv": {
+        "delimiter": "|",
+        "brackets": False
+    },
+    "lineorder_csv": {
+        "delimiter": "|",
+        "brackets": False
+    },
+    "supplier_csv": {
+        "delimiter": "|",
+        "brackets": False
+    },
+    "part_csv": {
+        "delimiter": "|",
+        "brackets": False
+    },
+    "customer_csv": {
+        "delimiter": "|",
+        "brackets": False
+    },
+    "sailors": {
+        "delimiter": ";",
+        "brackets": False
+    },
+    "reserves": {
+        "delimiter": ";",
+        "brackets": False
+    }
+}
 
 
 def convert_scan(obj):
     conv = {"operator": "scan"}
     conv["max_line_estimate"] = linehints[obj["name"]]
     if obj["name"] in csvs:
-        conv["plugin"] = {"type": "csv", "name": fix_rel_name(obj["name"])}
+        conv["plugin"] = copy.deepcopy(csvs[obj["name"]])
+        conv["plugin"]["type"] = "csv"
+        conv["plugin"]["name"] = fix_rel_name(obj["name"])
         conv["plugin"]["projections"] = [{"relName": fix_rel_name(t["rel"]),
                                           "attrName": t["attr"]}
                                          for t in obj["output"]]
         conv["plugin"]["policy"] = 2
         conv["plugin"]["lines"] = linehints[obj["name"]]
-        conv["plugin"]["delimiter"] = "|"
-        conv["plugin"]["brackets"] = False
+        # conv["plugin"]["delimiter"] = "|"
+        # conv["plugin"]["brackets"] = False
     else:
         conv["plugin"] = {"type": "block", "name": fix_rel_name(obj["name"])}
         conv["plugin"]["projections"] = [{"relName": fix_rel_name(t["rel"]),
@@ -241,9 +285,6 @@ def fix_rel_name(obj):
 
 
 def convert_groupby(obj):
-    global has_seen_groupby
-    prev_has_seen_groupby = has_seen_groupby
-    has_seen_groupby = True
     conv = {}
     conv["operator"] = "groupby"
     exp = []
@@ -299,7 +340,6 @@ def convert_groupby(obj):
     conv["maxInputSize"] = 1024*128     # FIXME: requires upper limit!
     if "input" in obj:
         conv["input"] = convert_operator(obj["input"])
-    has_seen_groupby = prev_has_seen_groupby
     conv["max_line_estimate"] = conv["input"]["max_line_estimate"]
     return conv
 
@@ -396,18 +436,26 @@ def calcite_probe_side(est_left, est_right):
 def convert_join(obj):  # FIMXE: for now, right-left is in reverse, for the star schema
     conv = {}
     conv["operator"] = "hashjoin-chained"
-    conv["hash_bits"] = 14                     # FIXME: make more adaptive
-    conv["maxBuildInputSize"] = 1024*1024*128  # FIXME: requires upper limit!
     if (obj["cond"]["expression"] != "eq"):
         print(obj["cond"]["expression"])
         assert(False)
     join_input = {}
     join_input["left"] = convert_operator(obj["left"])
     join_input["right"] = convert_operator(obj["right"])
+
     est_left = join_input["left"]["max_line_estimate"]
     est_right = join_input["right"]["max_line_estimate"]
+
     build_side = calcite_build_side(est_left, est_right)
     probe_side = calcite_probe_side(est_left, est_right)
+
+    build_lines_est = join_input[build_side]["max_line_estimate"]
+    conv["hash_bits"] = int(ceil(log(2.4 * build_lines_est, 2)))  # TODO: reconsider
+    conv["maxBuildInputSize"] = min(
+                                    1024*1024*128,  # FIXME: remove restriction
+                                    int(1.2 * build_lines_est)
+                                    )
+
     conv["max_line_estimate"] = est_right * est_left
     conv["build_k"] = convert_expression(obj["cond"][build_side])
     conv["build_k"]["type"] = {
@@ -418,7 +466,7 @@ def convert_join(obj):  # FIMXE: for now, right-left is in reverse, for the star
         "type": convert_type(obj["cond"][probe_side]["type"])
     }
     build_e = []
-    leftTuple = obj[build_side]["output"]
+    leftTuple = obj[build_side + "Mat"]
     leftAttr = obj["cond"][build_side].get("attr", None)
     build_packet = 1
     conv["build_w"] = [32 + type_size[conv["build_k"]["type"]["type"]]]
@@ -429,14 +477,7 @@ def convert_join(obj):  # FIMXE: for now, right-left is in reverse, for the star
                     e = convert_expression(t)
                     out_t = x
                     out_type = convert_type(out_t["type"])
-                    e["register_as"] = {
-                        # "type": {
-                        #     "type": out_type
-                        # },
-                        "attrNo": -1,
-                        "relName": fix_rel_name(out_t["rel"]),
-                        "attrName": out_t["attr"]
-                    }
+                    e["register_as"] = t["register_as"]
                     conv["build_w"].append(type_size[out_type])
                     be = {"e": e}
                     be["packet"] = build_packet
@@ -444,24 +485,26 @@ def convert_join(obj):  # FIMXE: for now, right-left is in reverse, for the star
                     be["offset"] = 0
                     build_e.append(be)
                     break
-        else:
-            for x in obj["tupleType"]:
-                if x["attr"] == leftAttr:
-                    out_t = x
-                    out_type = convert_type(out_t["type"])
-                    conv["build_k"]["register_as"] = {
-                        # "type": {
-                        #     "type": out_type
-                        # },
-                        "attrNo": -1,
-                        "relName": fix_rel_name(out_t["rel"]),
-                        "attrName": out_t["attr"]
-                    }
-                    break
+        # else:
+        #     for x in obj["tupleType"]:
+        #         if x["attr"] == leftAttr:
+        #             out_t = x
+        #             out_type = convert_type(out_t["type"])
+        #             # conv["build_k"]["register_as"] = leftAttr["register_as"]
+        #             # {
+        #             #     # "type": {
+        #             #     #     "type": out_type
+        #             #     # },
+        #             #     "attrNo": -1,
+        #             #     "relName": fix_rel_name(out_t["rel"]),
+        #             #     "attrName": out_t["attr"]
+        #             # }
+        #             break
+    conv["build_k"] = convert_expression(obj["cond"][build_side])
     conv["build_e"] = build_e
     conv["build_input"] = join_input[build_side]
     probe_e = []
-    rightTuple = obj[probe_side]["output"]
+    rightTuple = obj[probe_side + "Mat"]
     rightAttr = obj["cond"][probe_side].get("attr", None)
     probe_packet = 1
     conv["probe_w"] = [32 + type_size[conv["probe_k"]["type"]["type"]]]
@@ -472,14 +515,7 @@ def convert_join(obj):  # FIMXE: for now, right-left is in reverse, for the star
                     e = convert_expression(t)
                     out_t = x
                     out_type = convert_type(out_t["type"])
-                    e["register_as"] = {
-                        # "type": {
-                        #     "type": out_type
-                        # },
-                        "attrNo": -1,
-                        "relName": fix_rel_name(out_t["rel"]),
-                        "attrName": out_t["attr"]
-                    }
+                    e["register_as"] = t["register_as"]
                     conv["probe_w"].append(type_size[out_type])
                     pe = {"e": e}
                     pe["packet"] = probe_packet
@@ -487,20 +523,22 @@ def convert_join(obj):  # FIMXE: for now, right-left is in reverse, for the star
                     pe["offset"] = 0
                     probe_e.append(pe)
                     break
-        else:
-            for x in obj["tupleType"]:
-                if x["attr"] == rightAttr:
-                    out_t = x
-                    out_type = convert_type(out_t["type"])
-                    conv["probe_k"]["register_as"] = {
-                        # "type": {
-                        #     "type": out_type
-                        # },
-                        "attrNo": -1,
-                        "relName": fix_rel_name(out_t["rel"]),
-                        "attrName": out_t["attr"]
-                    }
-                    break
+        # else:
+        #     for x in obj["tupleType"]:
+        #         if x["attr"] == rightAttr:
+        #             out_t = x
+        #             out_type = convert_type(out_t["type"])
+        #             # conv["probe_k"]["register_as"] = rightAttr["register_as"]
+        #             # {
+        #             #     # "type": {
+        #             #     #     "type": out_type
+        #             #     # },
+        #             #     "attrNo": -1,
+        #             #     "relName": fix_rel_name(out_t["rel"]),
+        #             #     "attrName": out_t["attr"]
+        #             # }
+        #             break
+    conv["probe_k"] = convert_expression(obj["cond"][probe_side])
     conv["probe_e"] = probe_e
     conv["probe_input"] = join_input[probe_side]
     return conv

@@ -17,24 +17,27 @@ def get_inputs(obj):
 
 def createTest(name):
     test_name = os.path.basename(name)
+    if test_name.endswith("_plan.json"):
+        test_name = test_name[0:-10]
     if test_name.endswith(".json"):
         test_name = test_name[0:-5]
     test_name = os.path.basename(test_name).replace('.', '_')
-    print(r"""
+    test = (r"""
 TEST_F(MultiGPUTest, """ + test_name + r""") {
     auto load = [](string filename){
         StorageManager::load(filename, PINNED);
     };
 """)
     for f in get_inputs(json.load(open(name))):
-        print('    load("' + f + '");')
-    print(r'''
+        test = test + ('    load("' + f + '");\n')
+    test = test + (r'''
     const char *testLabel = "''' + test_name + r'''";
     const char *planPath  = "inputs/plans/''' + name + r'''";
 
     runAndVerify(testLabel, planPath);
 }''')
+    return test
 
 
 if __name__ == "__main__":
-    createTest(sys.argv[1])
+    print(createTest(sys.argv[1]))

@@ -7,7 +7,7 @@ block_ops = ["scan"]
 tuple_ops = ["reduce", "hashjoin-chained", "select", "project", "groupby"]
 
 
-def deviceaware_operator(obj):
+def deviceaware_operator(obj, explicit_memcpy=True):
     for inp in input_keys:
         if inp in obj:
             inpobj = obj[inp]
@@ -21,10 +21,12 @@ def deviceaware_operator(obj):
                     obj[inp]["operator"] = "cpu-to-gpu"
                 else:
                     obj[inp]["operator"] = "gpu-to-cpu"
-                    obj[inp]["queueSize"] = 4096
                     obj[inp]["granularity"] = "thread"  # FIMXE: not always!
                 # isBlock = (inpobj["operator"] != "reduce")  # inpobj["blockwise"]
-                isBlock = (inpobj["operator"] != "reduce") and ("gpu" not in inpobj or not inpobj["gpu"])  # inpobj["blockwise"]
+                isBlock = (inpobj["operator"] != "reduce")  # and inpobj["operator"] != "groupby")  # inpobj["blockwise"]
+                isBlock = isBlock or inpobj["blockwise"] or obj["blockwise"]
+                # if (not explicit_memcpy) and (not obj["gpu"]):
+                #     isBlock = False
                 projs = []
                 for t in inpobj["output"]:
                     projs.append({
@@ -33,11 +35,15 @@ def deviceaware_operator(obj):
                         "isBlock": isBlock
                         })
                 obj[inp]["projections"] = projs
-                obj[inp]["input"] = deviceaware_operator(inpobj)
+                obj[inp]["input"] = deviceaware_operator(inpobj, explicit_memcpy)
                 obj[inp]["output"] = inpobj["output"]
                 obj[inp]["blockwise"] = isBlock
+                if "partitioning" in inpobj:
+                    obj[inp]["partitioning"] = inpobj["partitioning"][:]
+                    obj[inp]["dop"] = inpobj["dop"]
+                obj[inp]["queueSize"] = 128*1024
             else:
-                obj[inp] = deviceaware_operator(inpobj)
+                obj[inp] = deviceaware_operator(inpobj, explicit_memcpy)
     return obj
 
 
