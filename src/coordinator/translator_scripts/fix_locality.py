@@ -8,7 +8,10 @@ tuple_ops = ["reduce", "hashjoin-chained", "select", "project", "groupby"]
 
 
 def fixlocality_operator(obj, explicit_memcpy=True, target=None):
-    if obj["operator"] == "block-to-tuples":
+    if obj["operator"] == "broadcast":
+        obj["to_cpu"] = not (target is not None and target == "gpu")
+        obj["input"] = fixlocality_operator(obj["input"], explicit_memcpy, None)
+    elif obj["operator"] == "block-to-tuples":
         # if target is not None:
         #     print(target)
         # assert(target is None)

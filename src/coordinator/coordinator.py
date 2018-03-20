@@ -158,16 +158,18 @@ class Executor(ProcessObj):
 
 
 class SQLParseError(Exception):
-    def __init__(self, message):
+    def __init__(self, message, details):
         # Call the base class constructor with the parameters it needs
         Exception.__init__(self, message)
+        self.details = details
 
 
 class Planner(ProcessObj):
     def __init__(self, args):
         ProcessObj.__init__(self)
         wd = os.path.join(os.path.dirname(__file__), r"../SQLPlanner")
-        cmd = ["java", "-jar", "target/scala-2.12/SQLPlanner-assembly-0.1.jar"]
+        schema = os.path.abspath(os.path.join(os.path.dirname(__file__), r"../../opt/raw/inputs/plans/schema.json"))
+        cmd = ["java", "-jar", "target/scala-2.12/SQLPlanner-assembly-0.1.jar", schema]
         self.p = Popen(cmd, stdin=PIPE, stdout=PIPE, cwd=wd)
         self.name = "planner"
         # self.stdin = self.p.stdin
@@ -178,8 +180,7 @@ class Planner(ProcessObj):
         while not self.p.poll():
             plannerline = self.p.stdout.readline()
             if plannerline.startswith("Query parsing error:"):
-                print(plannerline.strip())
-                break
+                raise(SQLParseError("Planning failed", plannerline.strip()))
             elif plannerline == "JSON Serialization:\n":
                 jsonstr = ""
                 cntbrackets = 0
@@ -198,7 +199,7 @@ class Planner(ProcessObj):
                                                     parallel,
                                                     cpu_only)
                         return jplan
-        raise(SQLParseError("Planning failed"))
+        raise(SQLParseError("Planning failed", "child exited"))
 
 
 def init_socket(host, port):
@@ -284,7 +285,11 @@ if __name__ == "__main__":
                             sql_query = sql_query[0]
                             readline.add_history(sql_query + ';')
                         t0 = time.time()
-                        plan = planner.get_plan_from_sql(sql_query)
+                        try:
+                            plan = planner.get_plan_from_sql(sql_query)
+                        except SQLParseError as e:
+                            print("error (" + e.details + ")")
+                            continue
                         t1 = time.time()
                         if create_test is None or gentests_exec:
                             (wplan_ms, wexec_ms,

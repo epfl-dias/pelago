@@ -17,6 +17,7 @@ def convert_operator(obj):
         "select": convert_selection,
         "scan": convert_scan,
         "sort": convert_sort,
+        "unnest": convert_unnest,
         "default": convert_default
     }
     if op in converters:
@@ -75,6 +76,10 @@ conv_type = {
 def convert_type(type):
     if type.startswith("CHAR("):
         return "dstring"
+    if type.startswith("RecordType("):
+        return "record"
+    if type.endswith(" ARRAY"):
+        return "list"
     return conv_type[type]
 
 
@@ -97,7 +102,7 @@ def convert_expr_varchar(obj, parent):
     }
 
 
-def convert_expression(obj, parent=None):
+def convert_expression(obj, parent=None, allow_type_in_project=False):
     if "rel" in obj and "attr" in obj:
         # print(obj)
         x = {
@@ -119,6 +124,10 @@ def convert_expression(obj, parent=None):
                 "attrName": obj["attr"]
             }
         }
+        if allow_type_in_project and "type" in obj:
+            tp = convert_type(obj["type"])
+            x["attribute"]["type"] = {"type": tp}
+            x["e"]["attributes"][0]["type"] = {"type": tp}
     else:
         if "depends_on" in obj:
             dep_new = []
@@ -156,97 +165,103 @@ def convert_expression(obj, parent=None):
     return x
 
 
-linehints = {
-    "dates": 2556,
-    "lineorder": 600038145,
-    "supplier": 200000,
-    "part": 1400000,
-    "customer": 3000000,
-    "dates_csv": 2556,
-    "lineorder_csv": 600038145,
-    "supplier_csv": 200000,
-    "part_csv": 1400000,
-    "customer_csv": 3000000,
-    "sailors": 10,
-    "reserves": 10,
-    "inputs/ssbm100/date.csv": 2556,
-    "inputs/ssbm100/lineorder.csv": 600038145,
-    "inputs/ssbm100/supplier.csv": 200000,
-    "inputs/ssbm100/part.csv": 1400000,
-    "inputs/ssbm100/customer.csv": 3000000
-}
+# linehints = {
+#     "dates": 2556,
+#     "lineorder": 600038145,
+#     "supplier": 200000,
+#     "part": 1400000,
+#     "customer": 3000000,
+#     "dates_csv": 2556,
+#     "lineorder_csv": 600038145,
+#     "supplier_csv": 200000,
+#     "part_csv": 1400000,
+#     "customer_csv": 3000000,
+#     "sailors": 10,
+#     "reserves": 10,
+#     "inputs/ssbm100/date.csv": 2556,
+#     "inputs/ssbm100/lineorder.csv": 600038145,
+#     "inputs/ssbm100/supplier.csv": 200000,
+#     "inputs/ssbm100/part.csv": 1400000,
+#     "inputs/ssbm100/customer.csv": 3000000
+# }
 
-rel_names = {
-    "dates": "inputs/ssbm100/date.csv",
-    "lineorder": "inputs/ssbm100/lineorder.csv",
-    "supplier": "inputs/ssbm100/supplier.csv",
-    "part": "inputs/ssbm100/part.csv",
-    "customer": "inputs/ssbm100/customer.csv",
-    "dates_csv": "inputs/ssbm100/date2.tbl",
-    "lineorder_csv": "inputs/ssbm100/lineorder2.tbl",
-    "supplier_csv": "inputs/ssbm100/supplier2.tbl",
-    "part_csv": "inputs/ssbm100/part2.tbl",
-    "customer_csv": "inputs/ssbm100/customer2.tbl",
-    "sailors": "inputs/sailors.csv",
-    "reserves": "inputs/reserves.csv",
-    "inputs/ssbm100/date.csv": "inputs/ssbm100/date.csv",
-    "inputs/ssbm100/lineorder.csv": "inputs/ssbm100/lineorder.csv",
-    "inputs/ssbm100/supplier.csv": "inputs/ssbm100/supplier.csv",
-    "inputs/ssbm100/part.csv": "inputs/ssbm100/part.csv",
-    "inputs/ssbm100/customer.csv": "inputs/ssbm100/customer.csv"
-}
+rel_names = {}
+#     "dates": "inputs/ssbm100/date.csv",
+#     "lineorder": "inputs/ssbm100/lineorder.csv",
+#     "supplier": "inputs/ssbm100/supplier.csv",
+#     "part": "inputs/ssbm100/part.csv",
+#     "customer": "inputs/ssbm100/customer.csv",
+#     "dates_csv": "inputs/ssbm100/date2.tbl",
+#     "lineorder_csv": "inputs/ssbm100/lineorder2.tbl",
+#     "supplier_csv": "inputs/ssbm100/supplier2.tbl",
+#     "part_csv": "inputs/ssbm100/part2.tbl",
+#     "customer_csv": "inputs/ssbm100/customer2.tbl",
+#     "sailors": "inputs/sailors.csv",
+#     "reserves": "inputs/reserves.csv",
+#     "inputs/ssbm100/date.csv": "inputs/ssbm100/date.csv",
+#     "inputs/ssbm100/lineorder.csv": "inputs/ssbm100/lineorder.csv",
+#     "inputs/ssbm100/supplier.csv": "inputs/ssbm100/supplier.csv",
+#     "inputs/ssbm100/part.csv": "inputs/ssbm100/part.csv",
+#     "inputs/ssbm100/customer.csv": "inputs/ssbm100/customer.csv"
+# }
 
-csvs = {
-    "dates_csv": {
-        "delimiter": "|",
-        "brackets": False
-    },
-    "lineorder_csv": {
-        "delimiter": "|",
-        "brackets": False
-    },
-    "supplier_csv": {
-        "delimiter": "|",
-        "brackets": False
-    },
-    "part_csv": {
-        "delimiter": "|",
-        "brackets": False
-    },
-    "customer_csv": {
-        "delimiter": "|",
-        "brackets": False
-    },
-    "sailors": {
-        "delimiter": ";",
-        "brackets": False
-    },
-    "reserves": {
-        "delimiter": ";",
-        "brackets": False
-    }
-}
+# csvs = {
+#     "dates_csv": {
+#         "delimiter": "|",
+#         "brackets": False
+#     },
+#     "lineorder_csv": {
+#         "delimiter": "|",
+#         "brackets": False
+#     },
+#     "supplier_csv": {
+#         "delimiter": "|",
+#         "brackets": False
+#     },
+#     "part_csv": {
+#         "delimiter": "|",
+#         "brackets": False
+#     },
+#     "customer_csv": {
+#         "delimiter": "|",
+#         "brackets": False
+#     },
+#     "sailors": {
+#         "delimiter": ";",
+#         "brackets": False
+#     },
+#     "reserves": {
+#         "delimiter": ";",
+#         "brackets": False
+#     }
+# }
 
 
 def convert_scan(obj):
     conv = {"operator": "scan"}
-    conv["max_line_estimate"] = linehints[obj["name"]]
-    if obj["name"] in csvs:
-        conv["plugin"] = copy.deepcopy(csvs[obj["name"]])
-        conv["plugin"]["type"] = "csv"
-        conv["plugin"]["name"] = fix_rel_name(obj["name"])
-        conv["plugin"]["projections"] = [{"relName": fix_rel_name(t["rel"]),
-                                          "attrName": t["attr"]}
-                                         for t in obj["output"]]
-        conv["plugin"]["policy"] = 2
-        conv["plugin"]["lines"] = linehints[obj["name"]]
-        # conv["plugin"]["delimiter"] = "|"
-        # conv["plugin"]["brackets"] = False
-    else:
-        conv["plugin"] = {"type": "block", "name": fix_rel_name(obj["name"])}
-        conv["plugin"]["projections"] = [{"relName": fix_rel_name(t["rel"]),
-                                          "attrName": t["attr"]}
-                                         for t in obj["output"]]
+    conv["max_line_estimate"] = obj["linehint"]  # linehints[obj["name"]]
+    conv["plugin"] = obj["plugin"]
+    conv["plugin"]["name"] = fix_rel_name(obj["name"])
+    conv["plugin"]["projections"] = [{"relName": fix_rel_name(t["rel"]),
+                                      "attrName": t["attr"]}
+                                     for t in obj["output"]]
+    # TODO: some plugin options can be set by query optimizer,
+    #       as for example csv's policy
+    # if obj["name"] in csvs:
+    #     conv["plugin"] = copy.deepcopy(csvs[obj["name"]])
+    #     conv["plugin"]["type"] = "csv"
+    #     conv["plugin"]["projections"] = [{"relName": fix_rel_name(t["rel"]),
+    #                                       "attrName": t["attr"]}
+    #                                      for t in obj["output"]]
+    #     conv["plugin"]["policy"] = 2
+    #     conv["plugin"]["lines"] = linehints[obj["name"]]
+    #     # conv["plugin"]["delimiter"] = "|"
+    #     # conv["plugin"]["brackets"] = False
+    # else:
+    #     conv["plugin"] = {"type": "block", "name": fix_rel_name(obj["name"])}
+    #     conv["plugin"]["projections"] = [{"relName": fix_rel_name(t["rel"]),
+    #                                       "attrName": t["attr"]}
+    #                                      for t in obj["output"]]
     return conv
 
 
@@ -282,6 +297,20 @@ def fix_rel_name(obj):
     if obj in rel_names:
         return rel_names[obj]
     return obj
+
+
+def convert_unnest(obj):
+    conv = {}
+    conv["operator"] = "unnest"
+    conv["p"] = {"expression": "bool", "v": True}
+    conv["argNo"] = 0
+    conv["path"] = {
+        "name": obj["path"][0]["name"],
+        "e": convert_expression(obj["path"][0]["e"])
+    }
+    conv["input"] = convert_operator(obj["input"])
+    conv["max_line_estimate"] = conv["input"]["max_line_estimate"] * 10  # FIXME: arbitrary scale factor
+    return conv
 
 
 def convert_groupby(obj):
@@ -383,13 +412,18 @@ def convert_agg(obj):
 
 
 def convert_projection(obj):
+    # if (len(obj["output"]) == 0):  # this may happen after an unnest (count(unnest))
+    #     return convert_operator(obj["input"])
     conv = {}
     conv["operator"] = "project"
-    conv["relName"] = fix_rel_name(obj["output"][0]["rel"])
+    if (len(obj["output"]) == 0):
+        conv["relName"] = "__empty"
+    else:
+        conv["relName"] = fix_rel_name(obj["output"][0]["rel"])
     conv["e"] = []
     assert(len(obj["output"]) == len(obj["e"]))
     for (t, e) in zip(obj["output"], obj["e"]):
-        exp = convert_expression(e)
+        exp = convert_expression(e, None, obj["input"]["operator"] == "unnest")
         exp["register_as"] = {
             # "type": {
             #     "type": convert_type(t["type"])
@@ -458,13 +492,15 @@ def convert_join(obj):  # FIMXE: for now, right-left is in reverse, for the star
 
     conv["max_line_estimate"] = est_right * est_left
     conv["build_k"] = convert_expression(obj["cond"][build_side])
-    conv["build_k"]["type"] = {
-        "type": convert_type(obj["cond"][build_side]["type"])
-    }
+    if "type" in obj["cond"][build_side]:
+        conv["build_k"]["type"] = {
+            "type": convert_type(obj["cond"][build_side]["type"])
+        }
     conv["probe_k"] = convert_expression(obj["cond"][probe_side])
-    conv["probe_k"]["type"] = {
-        "type": convert_type(obj["cond"][probe_side]["type"])
-    }
+    if "type" in obj["cond"][probe_side]:
+        conv["probe_k"]["type"] = {
+            "type": convert_type(obj["cond"][probe_side]["type"])
+        }
     build_e = []
     leftTuple = obj[build_side + "Mat"]
     leftAttr = obj["cond"][build_side].get("attr", None)
