@@ -4,14 +4,14 @@ import logging
 
 input_keys = ["input", "build_input", "probe_input"]
 block_ops = ["scan"]
-tuple_ops = ["reduce", "hashjoin-chained", "select", "project", "print", "groupby"]
+tuple_ops = ["reduce", "hashjoin-chained", "select", "project", "print", "groupby", "sort"]
 
 
 def annotate_device_jumps_operator(obj, force_jump_to_cpu=False):
-    is_print = (obj["operator"] == "print")
+    force_j2cpu = (obj["operator"] in ["print", "sort"])
     for inp in input_keys:
         if inp in obj:
-            annotate_device_jumps_operator(obj[inp], is_print)
+            annotate_device_jumps_operator(obj[inp], force_j2cpu)
     if obj["operator"] == "scan":
         if not force_jump_to_cpu:
             obj["jumpTo"] = "gpu"

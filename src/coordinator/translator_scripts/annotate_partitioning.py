@@ -323,6 +323,55 @@ def mark_partitioning(obj, out_dop=1):
             obj["partitioning"] = []
             obj["dop"] = 1
             return 1
+        elif obj["operator"] == "sort":
+            mark_partitioning(obj["input"])  # , [obj["k"]])
+            if obj["input"]["dop"] != 1:
+                # e = []
+                # projs = []
+                # for t in obj["e"]:
+                #     e.append({
+                #         "expression": "recordProjection",
+                #         "e": {
+                #             "expression": "argument",
+                #             "argNo": -1,
+                #             "type": {
+                #                 "type": "record",
+                #                 "relName": t["register_as"]["relName"]
+                #             },
+                #             "attributes": [{
+                #                 "relName": t["register_as"]["relName"],
+                #                 "attrName": t["register_as"]["attrName"]
+                #             }]
+                #         },
+                #         "attribute": {
+                #             "relName": t["register_as"]["relName"],
+                #             "attrName": t["register_as"]["attrName"]
+                #         }
+                #     })
+                #     projs.append({
+                #         "relName": t["register_as"]["relName"],
+                #         "attrName": t["register_as"]["attrName"],
+                #         "isBlock": False
+                #     })
+                obj["input"] = {
+                                "operator": "union",
+                                # "partitioning": [],
+                                "projections": obj["input"]["output"],
+                                "input": obj["input"],
+                                "blockwise": True,
+                                "output": obj["input"]["output"],
+                                "numOfParents": 1,
+                                "producers": obj["input"]["dop"],
+                                "gpu": False,
+                                "numa_local": False,
+                                "slack": 8
+                               }
+            # obj["e"] = e
+            # obj["p"] = {"expression": "bool", "v": True}
+            obj["gpu"] = False
+            obj["partitioning"] = []
+            obj["dop"] = 1
+            return 1
         else:
             part = None
             d = None

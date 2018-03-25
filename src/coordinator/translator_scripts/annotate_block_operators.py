@@ -4,7 +4,7 @@ import logging
 
 input_keys = ["input", "build_input", "probe_input"]
 block_ops = ["sort"]
-tuple_ops = ["reduce", "hashjoin-chained", "select", "project", "print", "groupby", "unnest"]
+tuple_ops = ["reduce", "hashjoin-chained", "select", "project", "print", "groupby", "unnest", "sort"]
 
 tuple_plugins = ["csv", "json"]
 block_plugins = ["block"]

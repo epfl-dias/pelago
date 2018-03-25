@@ -4,7 +4,7 @@ import logging
 
 input_keys = ["input", "build_input", "probe_input"]
 block_ops = ["scan"]
-tuple_ops = ["reduce", "hashjoin-chained", "select", "project", "groupby"]
+tuple_ops = ["reduce", "hashjoin-chained", "select", "project", "groupby", "sort"]
 
 
 def deviceaware_operator(obj, explicit_memcpy=True):

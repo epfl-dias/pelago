@@ -270,23 +270,23 @@ def convert_sort(obj):
     conv["operator"] = "sort"
     exp = []
     d = []
-    for (arg, t) in zip(obj["args"], obj["tupleType"]):
-        d.append(arg["direction"])
-        e = convert_expression(arg["expression"])
-        # e["type"] = {
-        #     "type": convert_type(t["type"]]
-        # }
-        e["register_as"] = {
+    assert(len(obj["args"]) == len(obj["tupleType"]))
+    # for (arg, t) in zip(obj["args"], obj["tupleType"]):
+    for arg in obj["args"]:
+        exp.append({
+            "direction": arg["direction"],
+            "expression": convert_expression(arg["expression"])
+        })
+        exp[-1]["expression"]["register_as"] = {
             # "type": {
             #     "type": convert_type(t["type"])
             # },
             "attrNo": -1,
-            "relName": fix_rel_name(t["rel"]),
-            "attrName": t["attr"]
+            "relName": fix_rel_name(arg["register_as"]["rel"]),
+            "attrName": arg["register_as"]["attr"]
         }
-        exp.append(e)
     conv["e"] = exp
-    conv["direction"] = d
+    # conv["direction"] = d
     if "input" in obj:
         conv["input"] = convert_operator(obj["input"])
     conv["max_line_estimate"] = conv["input"]["max_line_estimate"]
