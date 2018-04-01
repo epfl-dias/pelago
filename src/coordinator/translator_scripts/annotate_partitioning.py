@@ -368,7 +368,6 @@ def mark_partitioning(obj, out_dop=1):
                                }
             # obj["e"] = e
             # obj["p"] = {"expression": "bool", "v": True}
-            obj["gpu"] = False
             obj["partitioning"] = []
             obj["dop"] = 1
             return 1

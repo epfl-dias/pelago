@@ -582,11 +582,15 @@ def convert_join(obj):  # FIMXE: for now, right-left is in reverse, for the star
 
 def translate_plan(obj):
     out = convert_operator(obj)
-    conv = {"operator": "print", "e": []}
-    for e in obj["output"]:
-        conv["e"].append(convert_expression(e))
-    conv["input"] = out
-    conv["output"] = []
+    if out["operator"] == "project":
+        conv = out
+        conv["operator"] = "print"
+    else:
+        conv = {"operator": "print", "e": []}
+        for e in obj["output"]:
+            conv["e"].append(convert_expression(e))
+        conv["input"] = out
+        conv["output"] = []
     return conv
 
 

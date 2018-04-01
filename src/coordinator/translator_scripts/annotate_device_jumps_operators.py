@@ -8,7 +8,7 @@ tuple_ops = ["reduce", "hashjoin-chained", "select", "project", "print", "groupb
 
 
 def annotate_device_jumps_operator(obj, force_jump_to_cpu=False):
-    force_j2cpu = (obj["operator"] in ["print", "sort"])
+    force_j2cpu = (obj["operator"] in ["print"])
     for inp in input_keys:
         if inp in obj:
             annotate_device_jumps_operator(obj[inp], force_j2cpu)

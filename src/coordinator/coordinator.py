@@ -299,7 +299,8 @@ if __name__ == "__main__":
                                 total_ms = (t2 - t0) * 1000
                                 plan_ms = (t1 - t0) * 1000
                                 if timings_csv:
-                                    print('%.2f,' % (total_ms) +
+                                    print('Timing,' + 
+                                          '%.2f,' % (total_ms) +
                                           '%.2f,' % (plan_ms) +
                                           '%.2f,' % (wplan_ms) +
                                           '%.2f,' % (wexec_ms) +

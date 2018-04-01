@@ -59,6 +59,16 @@ def unpack_if_needed(obj, root):
                                     }
                                 }
                             }
+                            if "must_negate" in t:
+                                ind = t["must_unpack"].index(attrName)
+                                if t["must_negate"][ind] == "DESC":
+                                    obj["expression"] = "neg"
+                                    obj["e"]          = {
+                                        "expression": "recordProjection",
+                                        "e": obj["e"],
+                                        "attribute": obj["attribute"]
+                                    }
+                                    del obj["attribute"]
                             return
 
 
@@ -82,7 +92,7 @@ def flowaware_operator(obj):
                 continue
             if "blockwise" not in inpobj:
                 continue
-            if obj["blockwise"] != inpobj["blockwise"]:
+            if obj["blockwise"] != inpobj["blockwise"] and obj["operator"] != "sort":
                 obj[inp] = {}
                 obj[inp]["input"] = flowaware_operator(inpobj)
                 if obj["blockwise"]:
@@ -160,6 +170,8 @@ def flowaware_operator(obj):
                                        "isBlock": obj["blockwise"]})
                         if "must_unpack" in t:
                             output[-1]["must_unpack"] = t["must_unpack"][:]
+                        if "must_negate" in t:
+                            output[-1]["must_negate"] = t["must_negate"][:]
                         # t["isBlock"] = obj["blockwise"]
                     # for t in projs:
                     #     output.append({"attrName": t["attribute"]["attrName"],
@@ -213,6 +225,62 @@ def flowaware_operator(obj):
                     obj[inp]["dop"] = inpobj["dop"]
             else:
                 obj[inp] = flowaware_operator(inpobj)
+                if obj["operator"] == "sort":
+                    if "blockwise" in obj["input"] and obj["input"]["blockwise"]:
+                        inpobj = obj[inp]
+                        obj[inp] = {"input": inpobj}
+                        obj[inp]["operator"] = "block-to-tuples"
+                        obj[inp]["gpu"] = obj["gpu"]
+                        if obj["operator"] == "cpu-to-gpu":
+                            obj[inp]["gpu"] = True
+                        elif obj["operator"] == "gpu-to-cpu":
+                            obj[inp]["gpu"] = False
+                        else:
+                            obj[inp]["gpu"] = obj["gpu"]
+                        projs = []
+                        for t in inpobj["output"]:
+                            projs.append({
+                                "expression": "recordProjection",
+                                "e": {
+                                    "expression": "argument",
+                                    "argNo": -1,
+                                    "type": {
+                                        "type": "record",
+                                        "relName": t["relName"]
+                                    },
+                                    "attributes": [{
+                                        "relName": t["relName"],
+                                        "attrName": t["attrName"]
+                                    }]
+                                },
+                                "attribute": {
+                                    "relName": t["relName"],
+                                    "attrName": t["attrName"]
+                                }
+                            })
+                        output = []
+                        for t in inpobj["output"][:]:
+                            output.append({"attrName": t["attrName"],
+                                           "relName": t["relName"],
+                                           "isBlock": obj["blockwise"]})
+                            if "must_unpack" in t:
+                                output[-1]["must_unpack"] = t["must_unpack"][:]
+                            if "must_negate" in t:
+                                output[-1]["must_negate"] = t["must_negate"][:]
+                        obj[inp]["projections"] = projs
+                        obj[inp]["output"] = output
+                        if "partitioning" in inpobj:
+                            obj[inp]["partitioning"] = inpobj["partitioning"][:]
+                            obj[inp]["dop"] = inpobj["dop"]
+                    obj["output"] = [{
+                        "attrName": "__sorted",
+                        "relName": obj["output"][0]["relName"],
+                        "must_unpack": [x["expression"]["register_as"]["attrName"] for x in obj["e"]],
+                        # "must_negate": [x["direction" ]                            for x in obj["e"]],
+                        "isBlock": True
+                    }]
+                    if obj["gpu"]:
+                        obj["output"][0]["must_negate"] = [x["direction" ] for x in obj["e"]]
             if obj["operator"] in ["cpu-to-gpu", "gpu-to-cpu", "shuffle", "broadcast", "split", "union"]:
                 obj["output"] = copy.deepcopy(obj[inp]["output"][:])
                 projs = []
@@ -224,13 +292,7 @@ def flowaware_operator(obj):
                         })
                 obj["projections"] = projs
     if obj["operator"] not in ["cpu-to-gpu", "gpu-to-cpu", "shuffle", "broadcast", "split", "union", "tuples-to-block", "block-to-tuples"]:
-        print(obj["operator"])
-        for inp in input_keys:
-            if inp in obj:
-                print(obj[inp]["output"])
         unpack_if_needed(obj, obj)
-        if "build_e" in obj:
-            print(obj['build_e'])
     return obj
 
 

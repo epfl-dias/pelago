@@ -17,6 +17,8 @@ def annotate_device_operator(obj, coming_from_gpu=False):
         # del obj["jumpTo"]
         gpu_op = not jtgpu
     obj["gpu"] = gpu_op
+    if obj["operator"] == "sort" and gpu_op:
+        obj["blockwise"] = True
     ok = not gpu_op  # leaf nodes should always be CPU ops
     for inp in input_keys:
         if inp in obj:
