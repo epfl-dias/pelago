@@ -24,7 +24,11 @@ GLOG_CHECKOUT	?= "git clone https://github.com/google/glog.git"
 GLOG_REVISION	?= "-b v0.3.5"
 
 LLVM_CHECKOUT	?= "svn co http://llvm.org/svn/llvm-project"
-LLVM_REVISION	?= "tags/RELEASE_500/final"
+LLVM_REVISION	?= "tags/RELEASE_600/final"
+# for CUDA 9.1 support on LLVM 6, use the github llvm-mirror repo
+# and execute in src/llvm/tools/clang:
+#   git cherry-pick ccacb5ddbcbb10d9b3a4b7e2780875d1e5537063
+# after cloning the LLVM repos
 
 all: raw-jit-executor
 	@make --no-print-directory show-config
