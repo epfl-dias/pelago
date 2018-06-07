@@ -23,12 +23,8 @@ GTEST_REVISION	?= "-b release-1.7.0"
 GLOG_CHECKOUT	?= "git clone https://github.com/google/glog.git"
 GLOG_REVISION	?= "-b v0.3.5"
 
-LLVM_CHECKOUT	?= "svn co http://llvm.org/svn/llvm-project"
-LLVM_REVISION	?= "tags/RELEASE_600/final"
-# for CUDA 9.1 support on LLVM 6, use the github llvm-mirror repo
-# and execute in src/llvm/tools/clang:
-#   git cherry-pick ccacb5ddbcbb10d9b3a4b7e2780875d1e5537063
-# after cloning the LLVM repos
+LLVM_CHECKOUT	?= "git clone https://github.com/llvm-mirror/"
+LLVM_REVISION	?= "-b release_60"
 
 all: raw-jit-executor
 	@make --no-print-directory show-config
@@ -158,12 +154,18 @@ src/glog:
 
 .PRECIOUS: src/llvm
 src/llvm:
-	eval ${LLVM_CHECKOUT}/llvm/${LLVM_REVISION} src/llvm
-	eval ${LLVM_CHECKOUT}/cfe/${LLVM_REVISION} src/llvm/tools/clang
-	eval ${LLVM_CHECKOUT}/compiler-rt/${LLVM_REVISION} src/llvm/projects/compiler-rt
-	eval ${LLVM_CHECKOUT}/libcxx/${LLVM_REVISION} src/llvm/projects/libcxx
-	eval ${LLVM_CHECKOUT}/libcxxabi/${LLVM_REVISION} src/llvm/projects/libcxxabi
-	eval ${LLVM_CHECKOUT}/libunwind/${LLVM_REVISION} src/llvm/projects/libunwind
+	eval ${LLVM_CHECKOUT}/llvm ${LLVM_REVISION} src/llvm
+	eval ${LLVM_CHECKOUT}/clang ${LLVM_REVISION} src/llvm/tools/clang
+	eval ${LLVM_CHECKOUT}/compiler-rt ${LLVM_REVISION} src/llvm/projects/compiler-rt
+	eval ${LLVM_CHECKOUT}/libcxx ${LLVM_REVISION} src/llvm/projects/libcxx
+	eval ${LLVM_CHECKOUT}/libcxxabi ${LLVM_REVISION} src/llvm/projects/libcxxabi
+	eval ${LLVM_CHECKOUT}/libunwind ${LLVM_REVISION} src/llvm/projects/libunwind
+	# for CUDA 9.1+ support on LLVM 6:
+	#   git cherry-pick ccacb5ddbcbb10d9b3a4b7e2780875d1e5537063
+	cd src/llvm/tools/clang && git cherry-pick ccacb5ddbcbb10d9b3a4b7e2780875d1e5537063
+	# for CUDA 9.2 support on LLVM 6:
+	#   git cherry-pick 5f76154960a51843d2e49c9ae3481378e09e61ef
+	cd src/llvm/tools/clang && git cherry-pick 5f76154960a51843d2e49c9ae3481378e09e61ef
 
 #######################################################################
 # Makefile utils / Generic targets
