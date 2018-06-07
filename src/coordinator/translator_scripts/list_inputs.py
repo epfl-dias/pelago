@@ -11,7 +11,10 @@ def get_inputs(obj):
             ins.append(x["relName"] + "." + x["attrName"])
     for inkey in possible_inputs:
         if inkey in obj:
-            ins += get_inputs(obj[inkey])
+            if isinstance(obj[inkey],(list,)):
+                ins += sum([get_inputs(x) for x in obj[inkey]], [])
+            else:
+                ins += get_inputs(obj[inkey])
     return ins
 
 
@@ -28,7 +31,8 @@ TEST_F(MultiGPUTest, """ + test_name + r""") {
         StorageManager::load(filename, PINNED);
     };
 """)
-    for f in get_inputs(json.load(open(name))):
+    print(get_inputs(json.load(open(name))))
+    for f in set(get_inputs(json.load(open(name)))):
         test = test + ('    load("' + f + '");\n')
     test = test + (r'''
     const char *testLabel = "''' + test_name + r'''";

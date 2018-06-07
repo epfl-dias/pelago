@@ -1,5 +1,6 @@
 import json
 import logging
+from math import * 
 
 parallel = True
 
@@ -32,7 +33,7 @@ def mark_partitioning(obj, out_dop=1):
             mark_partitioning(obj["build_input"])  # , [obj["build_k"]])
             mark_partitioning(obj["probe_input"])  # , [obj["probe_k"]])
             shuffled = False
-            if obj["build_input"]["max_line_estimate"] < 1e7 and obj["build_k"] not in obj["build_input"]["partitioning"]:
+            if obj["build_input"]["max_line_estimate"] < 5e7 and obj["build_k"] not in obj["build_input"]["partitioning"]:
                 projs = []
                 for t in obj["build_input"]["output"]:
                     projs.append({
@@ -72,6 +73,8 @@ def mark_partitioning(obj, out_dop=1):
                 obj["broadcast-based"] = True
                 obj["partitioning"] = []
                 obj["dop"] = sel_dop(obj)
+                obj["maxBuildInputSize"] = max(int(obj["maxBuildInputSize"] / (sel_dop(obj)/2)), 128*1024*1024)
+                obj["hash_bits"]         = min(int(ceil(log(2 * obj["maxBuildInputSize"], 2))), obj["hash_bits"])  # TODO: reconsider
                 return obj["dop"]
             else:
                 if obj["build_input"]["dop"] == 1 and obj["build_input"]["blockwise"]:
@@ -148,6 +151,8 @@ def mark_partitioning(obj, out_dop=1):
                     }
                 obj["partitioning"] = sorted([obj["build_k"], obj["probe_k"]])
                 obj["dop"] = sel_dop(obj)
+                obj["maxBuildInputSize"] = max(int(obj["maxBuildInputSize"] / (sel_dop(obj)/2)), 128*1024*1024)
+                obj["hash_bits"]         = min(int(ceil(log(2 * obj["maxBuildInputSize"], 2))), obj["hash_bits"])  # TODO: reconsider
                 return obj["dop"]
         elif obj["operator"] == "groupby":
             # TODO first partition and then group by, or groupby localy and then groupby again globally ?
@@ -249,6 +254,8 @@ def mark_partitioning(obj, out_dop=1):
             obj["partitioning"] = ps
             # obj["k"] = ks
             obj["dop"] = sel_dop(obj)
+            # obj["maxInputSize"] = max(int(obj["maxInputSize"] / (sel_dop(obj)/2)), 128*1024*1024)
+            # obj["hash_bits"]    = int(ceil(log(2 * obj["maxInputSize"], 2)))  # TODO: reconsider
             return obj["dop"]
         elif obj["operator"] == "reduce":
             mark_partitioning(obj["input"])  # , [obj["k"]])

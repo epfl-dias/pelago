@@ -10,7 +10,7 @@ from fix_device_flow import deviceaware_operator
 from fix_locality import fixlocality_operator
 from fix_flow import flowaware_operator
 from fix_partitioning import fix_partitioning
-
+from to_hybr import mark_split_union_exchanges, create_split_union
 
 class plan:
     def __init__(self, str, is_file=True):
@@ -59,10 +59,20 @@ class plan:
         self.p = flowaware_operator(self.p)
         return self
 
+    def to_hybrid(self):
+        mark_split_union_exchanges(self.p)
+        self.p = create_split_union(self.p)
+        return self
+
     def dump(self):
         return json.dumps(self.p, indent=4)
 
-    def prepare(self, explicit_memcpy=True, parallel=True, cpu_only=False):
+    def get_obj_plan(self):
+        return self.p
+
+    def prepare(self, explicit_memcpy=True, parallel=True, cpu_only=False, hybrid=False):
+        if hybrid:
+            cpu_only = False
         self.get_required_input()                                         \
             .translate_plan()                                             \
             .annotate_block_operator()
@@ -77,6 +87,8 @@ class plan:
         self.fixlocality_operator(explicit_memcpy)
         if parallel:
             self.fix_partitioning()
+        if hybrid:
+            self.to_hybrid();
         return self
 
 

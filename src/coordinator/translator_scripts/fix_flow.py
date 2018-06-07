@@ -25,9 +25,9 @@ def unpack_if_needed(obj, root):
             for inp in input_keys:
                 if inp in root:
                     for t in root[inp]["output"]:
-                        print("-------> " + str(t) + " " + relName + "_" + attrName)
+                        # print("-------> " + str(t) + " " + relName + "_" + attrName)
                         if t["relName"] == relName and "must_unpack" in t and attrName in t["must_unpack"]:
-                            print("-------> " + str(t) + " " + relName + "_" + attrName)
+                            # print("-------> " + str(t) + " " + relName + "_" + attrName)
                             attrs = []
                             for a in t["must_unpack"]:
                                 attrs.append({

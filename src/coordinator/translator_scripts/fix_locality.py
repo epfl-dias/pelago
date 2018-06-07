@@ -30,6 +30,7 @@ def fixlocality_operator(obj, explicit_memcpy=True, target=None):
             mem_mov["output"] = obj["output"]
             mem_mov["blockwise"] = True
             mem_mov["gpu"] = False
+            mem_mov["slack"] = 8
             if "partitioning" in obj["input"]:
                 mem_mov["partitioning"] = obj["input"]["partitioning"]
                 mem_mov["dop"] = obj["dop"]
@@ -48,6 +49,7 @@ def fixlocality_operator(obj, explicit_memcpy=True, target=None):
                 # if not explicit_memcpy and obj[inp]["operator"] == "split" and obj[inp]["input"]["operator"] == "scan" and "inputs/ssbm100/lineorder.csv" == obj[inp]["projections"][0]["relName"]:
                 #     obj[inp] = fixlocality_operator(obj[inp], explicit_memcpy, None)
                 #     continue
+                mem_mov = {"operator": "mem-move-device"}
                 if (target == "gpu"):
                     mem_mov_local_to = {"operator": "mem-move-local-to"}
                     mem_mov_local_to["to_cpu"] = (target != "gpu")
@@ -65,9 +67,11 @@ def fixlocality_operator(obj, explicit_memcpy=True, target=None):
                     if "partitioning" in obj["input"]:
                         mem_mov_local_to["partitioning"] = obj["input"]["partitioning"]
                         mem_mov_local_to["dop"] = obj["dop"]
+                    mem_mov_local_to["slack"] = 4
+                    mem_mov["slack"] = 4
                 else:
                     mem_mov_local_to = fixlocality_operator(obj[inp], explicit_memcpy, None)
-                mem_mov = {"operator": "mem-move-device"}
+                    mem_mov["slack"] = 8
                 mem_mov["to_cpu"] = (target != "gpu")
                 mem_mov["projections"] = []
                 for t in obj["output"]:

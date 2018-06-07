@@ -366,7 +366,7 @@ def convert_groupby(obj):
         exp.append(e2)
     conv["e"] = exp
     conv["hash_bits"] = 10              # FIXME: make more adaptive
-    conv["maxInputSize"] = 1024*128     # FIXME: requires upper limit!
+    conv["maxInputSize"] = 1024*128*16     # FIXME: requires upper limit!
     if "input" in obj:
         conv["input"] = convert_operator(obj["input"])
     conv["max_line_estimate"] = conv["input"]["max_line_estimate"]

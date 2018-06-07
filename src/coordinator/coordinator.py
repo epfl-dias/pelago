@@ -11,7 +11,7 @@ import re
 import json
 import socket
 import argparse
-from translator_scripts.list_inputs import createTest
+from translator_scripts.list_inputs import createTest, get_inputs
 
 
 HOST = 'localhost'
@@ -30,11 +30,12 @@ timings = False
 timings_csv = False
 q = Queue.Queue()
 
-kws = ["result in file ", "error", "ready", "T"]
+kws = ["result in file ", "error", "ready", "T", "done"]
 
 explicit_memcpy = True
 parallel = True
 cpu_only = False
+hybrid = False
 
 gentests = False
 gentests_folder = "."
@@ -96,6 +97,7 @@ class Executor(ProcessObj):
         self.t.start()
         self.name = "executor"
         self.wait_for(lambda x: (x == "ready"))
+        self.loaded = []
         if args.socket:
             print("ready")
             conn.send("ready\n".encode())
@@ -104,6 +106,14 @@ class Executor(ProcessObj):
         self.p.stdin.write(cmd + '\n')
 
     def execute_plan(self, jsonplan):
+        # to_load = sorted([x for x in get_inputs(jsonplan.get_obj_plan()) if x.startswith('inputs/ssbm1000/lineorder')]);
+        # if (to_load != self.loaded):
+        #     self.p.stdin.write("unloadall\n")
+        #     self.wait_for(lambda x: x.startswith("done"))
+        #     for file in to_load:
+        #         self.p.stdin.write("load cpus " + file + "\n")
+        #         self.wait_for(lambda x: x.startswith("done"))
+        #     self.loaded = to_load
         t0 = time.time()
         with open("plan.json", 'w') as fplan:
             fplan.write(jsonplan.dump())
@@ -197,7 +207,8 @@ class Planner(ProcessObj):
                         jplan = jsonplanner.plan(jsonstr, False)            \
                                            .prepare(explicit_memcpy,
                                                     parallel,
-                                                    cpu_only)
+                                                    cpu_only,
+                                                    hybrid)
                         return jplan
         raise(SQLParseError("Planning failed", "child exited"))
 
@@ -284,69 +295,72 @@ if __name__ == "__main__":
                                 print("error (text after query end)")
                             sql_query = sql_query[0]
                             readline.add_history(sql_query + ';')
-                        t0 = time.time()
-                        try:
-                            plan = planner.get_plan_from_sql(sql_query)
-                        except SQLParseError as e:
-                            print("error (" + e.details + ")")
-                            continue
-                        t1 = time.time()
-                        if create_test is None or gentests_exec:
-                            (wplan_ms, wexec_ms,
-                                Tcodegen, Texec) = executor.execute_plan(plan)
-                            if (timings):
-                                t2 = time.time()
-                                total_ms = (t2 - t0) * 1000
-                                plan_ms = (t1 - t0) * 1000
-                                if timings_csv:
-                                    print('Timing,' + 
-                                          '%.2f,' % (total_ms) +
-                                          '%.2f,' % (plan_ms) +
-                                          '%.2f,' % (wplan_ms) +
-                                          '%.2f,' % (wexec_ms) +
-                                          '%.2f,' % (Tcodegen) +
-                                          '%.2f' % (Texec))
-                                else:
-                                    print("Total time: " +
-                                          '%.2f' % (total_ms) +
-                                          "ms, Planning time: " +
-                                          '%.2f' % (plan_ms) +
-                                          "ms, Flush plan time: " +
-                                          '%.2f' % (wplan_ms) +
-                                          "ms, Total executor time: " +
-                                          '%.2f' % (wexec_ms) +
-                                          "ms, Codegen time: " +
-                                          '%.2f' % (Tcodegen) +
-                                          "ms, Execution time: " +
-                                          '%.2f' % (Texec) +
-                                          "ms")
-                        if create_test is not None:
-                            ident = ""
-                            if '%' in create_test:
-                                if parallel:
-                                    ident = ident + "par"
-                                else:
-                                    ident = ident + "seq"
-                                if explicit_memcpy:
-                                    ident = ident + "_cpy"
-                                else:
-                                    ident = ident + "_uva"
-                                if cpu_only:
-                                    ident = ident + "_cpu"
-                            create_test = create_test.replace('%', ident)
-                            plan_path = gentests_folder + "/plans/" + create_test + "_plan.json"
-                            with open(plan_path, 'w') as p:
-                                p.write(plan.dump())
-                            with open(gentests_folder + "/" + create_test + "_test.cpp", 'w') as p:
-                                p.write("// Options during test generation:"
-                                        + "\n//     parallel    : "
-                                        + str(parallel)
-                                        + "\n//     memcpy      : "
-                                        + str(explicit_memcpy)
-                                        + "\n//     cpu_only    : "
-                                        + str(cpu_only) + "\n")
-                                p.write(bare_sql_input)
-                                p.write(createTest(plan_path) + "\n")
+                        for rep in range(5):
+                            t0 = time.time()
+                            try:
+                                plan = planner.get_plan_from_sql(sql_query)
+                            except SQLParseError as e:
+                                print("error (" + e.details + ")")
+                                continue
+                            t1 = time.time()
+                            if create_test is None or gentests_exec:
+                                (wplan_ms, wexec_ms,
+                                    Tcodegen, Texec) = executor.execute_plan(plan)
+                                if (timings):
+                                    t2 = time.time()
+                                    total_ms = (t2 - t0) * 1000
+                                    plan_ms = (t1 - t0) * 1000
+                                    if timings_csv:
+                                        print('Timing,' + 
+                                              '%.2f,' % (total_ms) +
+                                              '%.2f,' % (plan_ms) +
+                                              '%.2f,' % (wplan_ms) +
+                                              '%.2f,' % (wexec_ms) +
+                                              '%.2f,' % (Tcodegen) +
+                                              '%.2f' % (Texec))
+                                    else:
+                                        print("Total time: " +
+                                              '%.2f' % (total_ms) +
+                                              "ms, Planning time: " +
+                                              '%.2f' % (plan_ms) +
+                                              "ms, Flush plan time: " +
+                                              '%.2f' % (wplan_ms) +
+                                              "ms, Total executor time: " +
+                                              '%.2f' % (wexec_ms) +
+                                              "ms, Codegen time: " +
+                                              '%.2f' % (Tcodegen) +
+                                              "ms, Execution time: " +
+                                              '%.2f' % (Texec) +
+                                              "ms")
+                            if create_test is not None:
+                                ident = ""
+                                if '%' in create_test:
+                                    if parallel:
+                                        ident = ident + "par"
+                                    else:
+                                        ident = ident + "seq"
+                                    if explicit_memcpy:
+                                        ident = ident + "_cpy"
+                                    else:
+                                        ident = ident + "_uva"
+                                    if hybrid:
+                                        ident = ident + "_hyb"
+                                    elif cpu_only:
+                                        ident = ident + "_cpu"
+                                create_test = create_test.replace('%', ident)
+                                plan_path = gentests_folder + "/plans/" + create_test + "_plan.json"
+                                with open(plan_path, 'w') as p:
+                                    p.write(plan.dump())
+                                with open(gentests_folder + "/" + create_test + "_test.cpp", 'w') as p:
+                                    p.write("// Options during test generation:"
+                                            + "\n//     parallel    : "
+                                            + str(parallel)
+                                            + "\n//     memcpy      : "
+                                            + str(explicit_memcpy)
+                                            + "\n//     cpu_only    : "
+                                            + str(cpu_only) + "\n")
+                                    p.write(bare_sql_input)
+                                    p.write(createTest(plan_path) + "\n")
                     elif (line.lower() in ["quit", ".quit", "exit", ".exit",
                                            ".q", "q"]):
                         break
@@ -356,10 +370,10 @@ if __name__ == "__main__":
                         elif (line.lower() == ".timings off"):
                             timings = False
                         elif (line.lower() == ".timings csv on"):
-                            timings = True
+                            # timings = True
                             timings_csv = True
                         elif (line.lower() == ".timings csv off"):
-                            timings = True
+                            # timings = True
                             timings_csv = False
                         elif (line.lower() == ".timings csv"):
                             timings = True
@@ -415,6 +429,16 @@ if __name__ == "__main__":
                         else:
                             print("error (unknown option for cpuonly execution)")
                         print("Cpu only execution: " + str(cpu_only))
+                    elif (line.lower().startswith(".hybrid ")):
+                        if (line.lower() == ".hybrid query"):
+                            pass
+                        elif (line.lower() == ".hybrid on"):
+                            hybrid = True
+                        elif (line.lower() == ".hybrid off"):
+                            hybrid = False
+                        else:
+                            print("error (unknown option for hybrid execution)")
+                        print("Hybrid execution: " + str(hybrid))
                     elif (line.lower().startswith('.')):
                         executor.execute_command(line[1:])
     except KeyboardInterrupt:
