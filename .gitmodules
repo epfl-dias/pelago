@@ -1,0 +1,4 @@
+[submodule "src/raw-jit-executor"]
+	path = src/raw-jit-executor
+	url = git@gitlab.epfl.ch:DIAS/PROJECTS/caldera/raw-jit-executor.git
+	branch = gpu

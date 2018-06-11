@@ -3,6 +3,7 @@ opt
 build
 *_done
 src/*
+!src/raw-jit-executor
 !src/coordinator/*
 **.pyc
 src/coordinator/plan.json

@@ -268,3 +268,9 @@ do-build-%: %.configure_done
 	@echo "-----------------------------------------------------------------------"
 	@echo "$@ done."
 	touch $@
+
+raw-jit-executor.checkout_done: src/raw-jit-executor
+	git submodule update --init --recursive
+	@echo "-----------------------------------------------------------------------"
+	@echo "$@ done."
+	touch $@
