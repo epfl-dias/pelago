@@ -7,7 +7,7 @@ INSTALL_DIR	?= ${PELAGOS_DIR}/opt
 BUILD_DIR	?= ${PELAGOS_DIR}/build
 
 # CMAKE3		?= ~/cmake/bin/cmake
-CMAKE3		?= cmake3
+CMAKE3		?= cmake
 
 JOBS		?= $$(( $$(grep processor /proc/cpuinfo|tail -1|cut -d: -f2) + 1))
 
