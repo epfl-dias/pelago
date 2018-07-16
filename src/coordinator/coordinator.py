@@ -41,6 +41,8 @@ gentests = False
 gentests_folder = "."
 gentests_exec = False
 
+num_of_gpus = 2
+num_of_cpus = 24
 
 def quit(execu, plan):
     execu.stop()
@@ -106,17 +108,18 @@ class Executor(ProcessObj):
         self.p.stdin.write(cmd + '\n')
 
     def execute_plan(self, jsonplan):
-        # to_load = sorted([x for x in get_inputs(jsonplan.get_obj_plan()) if x.startswith('inputs/ssbm1000/lineorder')]);
-        # if (to_load != self.loaded):
-        #     self.p.stdin.write("unloadall\n")
-        #     self.wait_for(lambda x: x.startswith("done"))
-        #     for file in to_load:
-        #         self.p.stdin.write("load cpus " + file + "\n")
-        #         self.wait_for(lambda x: x.startswith("done"))
-        #     self.loaded = to_load
+        to_load = sorted([x for x in set(get_inputs(jsonplan.get_obj_plan())) if x.startswith('inputs/') and "lineorder" in x]);
+        print(to_load)
+        if (to_load != self.loaded):
+            self.p.stdin.write("unloadall\n")
+            self.wait_for(lambda x: x.startswith("done"))
+            for file in to_load:
+                self.p.stdin.write("load cpus " + file + "\n")
+                self.wait_for(lambda x: x.startswith("done"))
+            self.loaded = to_load
         t0 = time.time()
         with open("plan.json", 'w') as fplan:
-            fplan.write(jsonplan.dump())
+            fplan.write(jsonplan.dump() + '\n')
             fname = os.path.abspath(fplan.name)
         t1 = time.time()
         cmd = "execute plan from file " + fname
@@ -205,7 +208,9 @@ class Planner(ProcessObj):
                             fplan.write(json.dumps(json.loads(jsonstr),
                                                    indent=4))
                         jplan = jsonplanner.plan(jsonstr, False)            \
-                                           .prepare(explicit_memcpy,
+                                           .prepare(num_of_cpus,
+                                                    num_of_gpus,
+                                                    explicit_memcpy,
                                                     parallel,
                                                     cpu_only,
                                                     hybrid)
@@ -439,6 +444,18 @@ if __name__ == "__main__":
                         else:
                             print("error (unknown option for hybrid execution)")
                         print("Hybrid execution: " + str(hybrid))
+                    elif (line.lower().startswith(".cpu dop ")):
+                        if (line.lower() == ".cpu dop query"):
+                            pass
+                        else:
+                            num_of_cpus = int(line.lower()[len(".cpu dop "):])
+                        print("CPU DOP " + str(num_of_cpus))
+                    elif (line.lower().startswith(".gpu dop ")):
+                        if (line.lower() == ".gpu dop query"):
+                            pass
+                        else:
+                            num_of_gpus = int(line.lower()[len(".gpu dop "):])
+                        print("GPU DOP " + str(num_of_gpus))
                     elif (line.lower().startswith('.')):
                         executor.execute_command(line[1:])
     except KeyboardInterrupt:

@@ -16,7 +16,7 @@ def do_partitioning(obj, part=[]):
     if parallel:
         if obj["operator"] == "scan":
             print(part)
-            assert(len(part) == 0)
+            # assert(len(part) == 0)
             p = []
         elif obj["operator"] == "hashjoin-chained":
             p = do_partitioning(obj["build_input"], obj.get("build_k_part", obj["build_k"]))

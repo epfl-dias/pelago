@@ -27,8 +27,8 @@ class plan:
         self.p = translate_plan(self.p)
         return self
 
-    def annotate_partitioning(self):
-        self.p = annotate_partitioning(self.p)
+    def annotate_partitioning(self, cpu_dop, gpu_dop):
+        self.p = annotate_partitioning(self.p, cpu_dop, gpu_dop)
         return self
 
     def fix_partitioning(self):
@@ -59,9 +59,9 @@ class plan:
         self.p = flowaware_operator(self.p)
         return self
 
-    def to_hybrid(self):
+    def to_hybrid(self, cpu_dop, gpu_dop):
         mark_split_union_exchanges(self.p)
-        self.p = create_split_union(self.p)
+        self.p = create_split_union(self.p, cpu_dop, gpu_dop)
         return self
 
     def dump(self):
@@ -70,7 +70,7 @@ class plan:
     def get_obj_plan(self):
         return self.p
 
-    def prepare(self, explicit_memcpy=True, parallel=True, cpu_only=False, hybrid=False):
+    def prepare(self, cpu_dop, gpu_dop, explicit_memcpy=True, parallel=True, cpu_only=False, hybrid=False):
         if hybrid:
             cpu_only = False
         self.get_required_input()                                         \
@@ -80,7 +80,7 @@ class plan:
             self.annotate_device_jumps_operator()
         self.annotate_device_operator()
         if parallel:
-            self.annotate_partitioning()
+            self.annotate_partitioning(cpu_dop, gpu_dop)
         self.deviceaware_operator(explicit_memcpy)                        \
             .flowaware_operator()
         # if explicit_memcpy:
@@ -88,7 +88,7 @@ class plan:
         if parallel:
             self.fix_partitioning()
         if hybrid:
-            self.to_hybrid();
+            self.to_hybrid(cpu_dop, gpu_dop);
         return self
 
 

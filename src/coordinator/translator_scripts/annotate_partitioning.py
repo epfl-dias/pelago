@@ -8,17 +8,17 @@ input_keys = ["input", "build_input", "probe_input"]
 block_ops = ["scan"]
 tuple_ops = ["reduce", "hashjoin-chained", "select", "project", "print", "groupby"]
 
-num_of_gpus = 2
-num_of_cpus = 24
+# num_of_gpus = 2
+# num_of_cpus = 24
 
 
-def sel_dop(obj):
+def sel_dop(obj, cpu_dop, gpu_dop):
     if obj["gpu"]:
-        return num_of_gpus
-    return num_of_cpus
+        return gpu_dop #num_of_gpus
+    return cpu_dop #num_of_cpus
 
 
-def mark_partitioning(obj, out_dop=1):
+def mark_partitioning(obj, out_dop, cpu_dop, gpu_dop):
     # if req_partitioning and len(req_partitioning) > 0:
     #     obj["requested_output_partitioning"] = req_partitioning
     # for inp in input_keys:
@@ -30,8 +30,8 @@ def mark_partitioning(obj, out_dop=1):
             obj["dop"] = 1
             return 1
         elif obj["operator"] == "hashjoin-chained":
-            mark_partitioning(obj["build_input"])  # , [obj["build_k"]])
-            mark_partitioning(obj["probe_input"])  # , [obj["probe_k"]])
+            mark_partitioning(obj["build_input"], 1, cpu_dop, gpu_dop)  # , [obj["build_k"]])
+            mark_partitioning(obj["probe_input"], 1, cpu_dop, gpu_dop)  # , [obj["probe_k"]])
             shuffled = False
             if obj["build_input"]["max_line_estimate"] < 5e7 and obj["build_k"] not in obj["build_input"]["partitioning"]:
                 projs = []
@@ -48,9 +48,9 @@ def mark_partitioning(obj, out_dop=1):
                     "input": obj["build_input"],
                     "blockwise": True,
                     "output": obj["build_input"]["output"],
-                    "max_line_estimate": obj["build_input"]["max_line_estimate"] * sel_dop(obj),
-                    "numOfParents": sel_dop(obj),
-                    "dop": sel_dop(obj),
+                    "max_line_estimate": obj["build_input"]["max_line_estimate"] * sel_dop(obj, cpu_dop, gpu_dop),
+                    "numOfParents": sel_dop(obj, cpu_dop, gpu_dop),
+                    "dop": sel_dop(obj, cpu_dop, gpu_dop),
                     "producers": obj["build_input"]["dop"],
                     "gpu": False,
                     "slack": 8
@@ -63,17 +63,17 @@ def mark_partitioning(obj, out_dop=1):
                         "blockwise": obj["probe_input"]["max_line_estimate"] >= 1024,
                         "output": obj["probe_input"]["output"],
                         "max_line_estimate": obj["probe_input"]["max_line_estimate"],
-                        "numOfParents": sel_dop(obj),
+                        "numOfParents": sel_dop(obj, cpu_dop, gpu_dop),
                         "producers": 1,
-                        "dop": sel_dop(obj),
+                        "dop": sel_dop(obj, cpu_dop, gpu_dop),
                         "gpu": False,
                         "slack": 2
                     }
                 shuffled = True
                 obj["broadcast-based"] = True
                 obj["partitioning"] = []
-                obj["dop"] = sel_dop(obj)
-                obj["maxBuildInputSize"] = max(int(obj["maxBuildInputSize"] / (sel_dop(obj)/2)), 128*1024*1024)
+                obj["dop"] = sel_dop(obj, cpu_dop, gpu_dop)
+                obj["maxBuildInputSize"] = max(int(obj["maxBuildInputSize"] / (max(sel_dop(obj, cpu_dop, gpu_dop)/2.0, 1))), 128*1024*1024) #16*1024*1024)#128*1024*1024)
                 obj["hash_bits"]         = min(int(ceil(log(2 * obj["maxBuildInputSize"], 2))), obj["hash_bits"])  # TODO: reconsider
                 return obj["dop"]
             else:
@@ -85,9 +85,9 @@ def mark_partitioning(obj, out_dop=1):
                         "blockwise": obj["build_input"]["max_line_estimate"] >= 1024,
                         "output": obj["build_input"]["output"],
                         "max_line_estimate": obj["build_input"]["max_line_estimate"],
-                        "numOfParents": sel_dop(obj),
+                        "numOfParents": sel_dop(obj, cpu_dop, gpu_dop),
                         "producers": 1,
-                        "dop": sel_dop(obj),
+                        "dop": sel_dop(obj, cpu_dop, gpu_dop),
                         "gpu": False,
                         "slack": 2
                     }
@@ -107,8 +107,8 @@ def mark_partitioning(obj, out_dop=1):
                         "blockwise": True,
                         "output": obj["build_input"]["output"],
                         "max_line_estimate": obj["build_input"]["max_line_estimate"],
-                        "numOfParents": sel_dop(obj),
-                        "dop": sel_dop(obj),
+                        "numOfParents": sel_dop(obj, cpu_dop, gpu_dop),
+                        "dop": sel_dop(obj, cpu_dop, gpu_dop),
                         "producers": obj["build_input"]["dop"],
                         "gpu": False,
                         "slack": 16
@@ -121,9 +121,9 @@ def mark_partitioning(obj, out_dop=1):
                         "blockwise": obj["probe_input"]["max_line_estimate"] >= 1024,
                         "output": obj["probe_input"]["output"],
                         "max_line_estimate": obj["probe_input"]["max_line_estimate"],
-                        "numOfParents": sel_dop(obj),
+                        "numOfParents": sel_dop(obj, cpu_dop, gpu_dop),
                         "producers": 1,
-                        "dop": sel_dop(obj),
+                        "dop": sel_dop(obj, cpu_dop, gpu_dop),
                         "gpu": False,
                         "slack": 2
                     }
@@ -143,20 +143,20 @@ def mark_partitioning(obj, out_dop=1):
                         "blockwise": True,
                         "output": obj["probe_input"]["output"],
                         "max_line_estimate": obj["probe_input"]["max_line_estimate"],
-                        "numOfParents": sel_dop(obj),
-                        "dop": sel_dop(obj),
+                        "numOfParents": sel_dop(obj, cpu_dop, gpu_dop),
+                        "dop": sel_dop(obj, cpu_dop, gpu_dop),
                         "producers": obj["probe_input"]["dop"],
                         "gpu": False,
                         "slack": 16
                     }
                 obj["partitioning"] = sorted([obj["build_k"], obj["probe_k"]])
-                obj["dop"] = sel_dop(obj)
-                obj["maxBuildInputSize"] = max(int(obj["maxBuildInputSize"] / (sel_dop(obj)/2)), 128*1024*1024)
+                obj["dop"] = sel_dop(obj, cpu_dop, gpu_dop)
+                obj["maxBuildInputSize"] = max(int(obj["maxBuildInputSize"] / (sel_dop(obj, cpu_dop, gpu_dop)/2)), 128*1024*1024)
                 obj["hash_bits"]         = min(int(ceil(log(2 * obj["maxBuildInputSize"], 2))), obj["hash_bits"])  # TODO: reconsider
                 return obj["dop"]
         elif obj["operator"] == "groupby":
             # TODO first partition and then group by, or groupby localy and then groupby again globally ?
-            mark_partitioning(obj["input"])  # , [obj["k"]])
+            mark_partitioning(obj["input"], 1, cpu_dop, gpu_dop)  # , [obj["k"]])
             if obj["input"]["dop"] == 1 and obj["input"]["blockwise"]:
                 obj["input"] = {
                     "operator": "split",
@@ -164,9 +164,9 @@ def mark_partitioning(obj, out_dop=1):
                     "input": obj["input"],
                     "blockwise": obj["input"]["max_line_estimate"] >= 1024,
                     "output": obj["input"]["output"],
-                    "numOfParents": sel_dop(obj),
+                    "numOfParents": sel_dop(obj, cpu_dop, gpu_dop),
                     "producers": 1,
-                    "dop": sel_dop(obj),
+                    "dop": sel_dop(obj, cpu_dop, gpu_dop),
                     "gpu": False,
                     "slack": 2
                 }
@@ -245,20 +245,20 @@ def mark_partitioning(obj, out_dop=1):
                                 "input": obj["input"],
                                 "blockwise": True,
                                 "output": obj["input"]["output"],
-                                "numOfParents": sel_dop(obj),
-                                "dop": sel_dop(obj),
+                                "numOfParents": sel_dop(obj, cpu_dop, gpu_dop),
+                                "dop": sel_dop(obj, cpu_dop, gpu_dop),
                                 "producers": obj["input"]["dop"],
                                 "gpu": False,
                                 "slack": 16
                                }
             obj["partitioning"] = ps
             # obj["k"] = ks
-            obj["dop"] = sel_dop(obj)
-            # obj["maxInputSize"] = max(int(obj["maxInputSize"] / (sel_dop(obj)/2)), 128*1024*1024)
+            obj["dop"] = sel_dop(obj, cpu_dop, gpu_dop)
+            # obj["maxInputSize"] = max(int(obj["maxInputSize"] / (sel_dop(obj, cpu_dop, gpu_dop)/2)), 128*1024*1024)
             # obj["hash_bits"]    = int(ceil(log(2 * obj["maxInputSize"], 2)))  # TODO: reconsider
             return obj["dop"]
         elif obj["operator"] == "reduce":
-            mark_partitioning(obj["input"])  # , [obj["k"]])
+            mark_partitioning(obj["input"], 1, cpu_dop, gpu_dop)  # , [obj["k"]])
             if obj["input"]["dop"] == 1 and obj["input"]["blockwise"]:
                 obj["input"] = {
                     "operator": "split",
@@ -266,9 +266,9 @@ def mark_partitioning(obj, out_dop=1):
                     "input": obj["input"],
                     "blockwise": obj["input"]["max_line_estimate"] >= 1024,
                     "output": obj["input"]["output"],
-                    "numOfParents": sel_dop(obj),
+                    "numOfParents": sel_dop(obj, cpu_dop, gpu_dop),
                     "producers": 1,
-                    "dop": sel_dop(obj),
+                    "dop": sel_dop(obj, cpu_dop, gpu_dop),
                     "gpu": False,
                     "slack": 2
                 }
@@ -331,7 +331,7 @@ def mark_partitioning(obj, out_dop=1):
             obj["dop"] = 1
             return 1
         elif obj["operator"] == "sort":
-            mark_partitioning(obj["input"])  # , [obj["k"]])
+            mark_partitioning(obj["input"], 1, cpu_dop, gpu_dop)  # , [obj["k"]])
             if obj["input"]["dop"] != 1:
                 # e = []
                 # projs = []
@@ -383,7 +383,7 @@ def mark_partitioning(obj, out_dop=1):
             d = None
             for inp in input_keys:
                 if inp in obj:
-                    mark_partitioning(obj[inp])
+                    mark_partitioning(obj[inp], 1, cpu_dop, gpu_dop)
                     if obj[inp]["dop"] == 1 and obj[inp]["blockwise"]:
                         obj[inp] = {
                             "operator": "split",
@@ -391,9 +391,9 @@ def mark_partitioning(obj, out_dop=1):
                             "input": obj[inp],
                             "blockwise": obj[inp]["max_line_estimate"] >= 1024,
                             "output": obj[inp]["output"],
-                            "numOfParents": sel_dop(obj),
+                            "numOfParents": sel_dop(obj, cpu_dop, gpu_dop),
                             "producers": 1,
-                            "dop": sel_dop(obj),
+                            "dop": sel_dop(obj, cpu_dop, gpu_dop),
                             "gpu": False,
                             "slack": 2
                         }
@@ -421,9 +421,9 @@ def mark_partitioning(obj, out_dop=1):
 #                     decise_partitioning(obj[inp], None)
 
 
-def annotate_partitioning(obj):
+def annotate_partitioning(obj, cpu_dop, gpu_dop):
     assert(obj["operator"] == "print")
-    mark_partitioning(obj["input"])  # , sel_dop(obj["input"]))
+    mark_partitioning(obj["input"], 1, cpu_dop, gpu_dop)  # , sel_dop(obj, cpu_dop, gpu_dop["input"]))
     if obj["input"]["dop"] != 1:
         projs = []
         bw = obj["input"]["max_line_estimate"] >= 1024
