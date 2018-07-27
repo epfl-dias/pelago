@@ -1,7 +1,7 @@
 .??*
+.gitignore
 opt
 build
 *_done
-src/*
-
-!.gitignore
+**.pyc
+src/coordinator/plan.json

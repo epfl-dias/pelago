@@ -1,0 +1,37 @@
+[submodule "src/raw-jit-executor"]
+	path = src/raw-jit-executor
+	url = git@gitlab.epfl.ch:DIAS/PROJECTS/caldera/raw-jit-executor.git
+	branch = gpu
+[submodule "src/rapidjson"]
+	path = src/rapidjson
+	url = https://github.com/miloyip/rapidjson
+[submodule "src/gtest"]
+	path = src/gtest
+	url = https://github.com/google/googletest.git
+[submodule "src/glog"]
+	path = src/glog
+	url = https://github.com/google/glog.git
+[submodule "src/clang"]
+	path = src/clang
+	url = https://github.com/llvm-mirror/clang
+	branch = release_60
+[submodule "src/compiler-rt"]
+	path = src/compiler-rt
+	url = https://github.com/llvm-mirror/compiler-rt
+	branch = release_60
+[submodule "src/libcxx"]
+	path = src/libcxx
+	url = https://github.com/llvm-mirror/libcxx
+	branch = release_60
+[submodule "src/libcxxabi"]
+	path = src/libcxxabi
+	url = https://github.com/llvm-mirror/libcxxabi
+	branch = release_60
+[submodule "src/libunwind"]
+	path = src/libunwind
+	url = https://github.com/llvm-mirror/libunwind
+	branch = release_60
+[submodule "src/llvm"]
+	path = src/llvm
+	url = https://github.com/llvm-mirror/llvm
+	branch = release_60
