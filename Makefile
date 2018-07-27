@@ -11,21 +11,6 @@ CMAKE3		?= cmake
 
 JOBS		?= $$(( $$(grep processor /proc/cpuinfo|tail -1|cut -d: -f2) + 1))
 
-RAW_CHECKOUT	?= "git clone --recursive git@bitbucket.org:manolee/raw-jit-executor.git"
-RAW_REVISION	?= "-b gpu"
-
-RAPIDJSON_CHECKOUT ?= "git clone https://github.com/miloyip/rapidjson"
-RAPIDJSON_REVISION ?= "-b v1.1.0"
-
-GTEST_CHECKOUT	?= "git clone https://github.com/google/googletest.git"
-GTEST_REVISION	?= "-b release-1.7.0"
-
-GLOG_CHECKOUT	?= "git clone https://github.com/google/glog.git"
-GLOG_REVISION	?= "-b v0.3.5"
-
-LLVM_CHECKOUT	?= "git clone https://github.com/llvm-mirror/"
-LLVM_REVISION	?= "-b release_60"
-
 all: raw-jit-executor
 	@make --no-print-directory show-config
 
@@ -56,9 +41,11 @@ llvm: llvm.install_done
 # Install targets
 #######################################################################
 do-install-gtest: gtest.build_done
-	cd ${BUILD_DIR}/gtest && \
+	cd ${BUILD_DIR}/gtest/googlemock/gtest && \
 		cp *.a ${INSTALL_DIR}/lib && \
-		cp -r include/gtest ${INSTALL_DIR}/include
+		cp -r ${BUILD_DIR}/gtest/googletest/include/gtest \
+			${BUILD_DIR}/gtest/googlemock/include/gmock \
+			${INSTALL_DIR}/include
 
 #######################################################################
 # Build targets
@@ -135,31 +122,26 @@ do-conf-llvm: llvm.checkout_done
 #######################################################################
 # Checkout sources as needed
 #######################################################################
-.PRECIOUS: src/raw-jit-executor
-src/raw-jit-executor:
-	eval ${RAW_CHECKOUT} ${RAW_REVISION} src/raw-jit-executor
 
-.PRECIOUS: src/rapidjson
-src/rapidjson:
-	eval ${RAPIDJSON_CHECKOUT} ${RAPIDJSON_REVISION} src/rapidjson
-	sed -i '/^elseif (CMAKE_CXX_COMPILER_ID MATCHES \"Clang\")$$/a    set(CMAKE_CXX_FLAGS \"$${CMAKE_CXX_FLAGS} -Wno-zero-as-null-pointer-constant -Wno-shadow\")' src/rapidjson/CMakeLists.txt
+.PRECIOUS: clang
+.PRECIOUS: compiler-rt
+.PRECIOUS: glog
+.PRECIOUS: gtest
+.PRECIOUS: libcxx
+.PRECIOUS: libcxxabi
+.PRECIOUS: libunwind
+.PRECIOUS: llvm
+.PRECIOUS: rapidjson
 
-.PRECIOUS: src/gtest
-src/gtest:
-	eval ${GTEST_CHECKOUT} ${GTEST_REVISION} src/gtest
-
-.PRECIOUS: src/glog
-src/glog:
-	eval ${GLOG_CHECKOUT} ${GLOG_REVISION} src/glog
-
-.PRECIOUS: src/llvm
-src/llvm:
-	eval ${LLVM_CHECKOUT}/llvm ${LLVM_REVISION} src/llvm
-	eval ${LLVM_CHECKOUT}/clang ${LLVM_REVISION} src/llvm/tools/clang
-	eval ${LLVM_CHECKOUT}/compiler-rt ${LLVM_REVISION} src/llvm/projects/compiler-rt
-	eval ${LLVM_CHECKOUT}/libcxx ${LLVM_REVISION} src/llvm/projects/libcxx
-	eval ${LLVM_CHECKOUT}/libcxxabi ${LLVM_REVISION} src/llvm/projects/libcxxabi
-	eval ${LLVM_CHECKOUT}/libunwind ${LLVM_REVISION} src/llvm/projects/libunwind
+do-checkout-llvm:
+	# No way of adding from a top level submodules within sub-
+	# modules, so stickying to this method.
+	git submodule update --init --recursive src/llvm src/clang src/compiler-rt src/libcxx src/libcxxabi src/libunwind
+	ln -sf ../../clang src/llvm/tools/clang
+	ln -sf ../../compiler-rt src/llvm/projects/compiler-rt
+	ln -sf ../../libcxx src/llvm/projects/libcxx
+	ln -sf ../../libcxxabi src/llvm/projects/libcxxabi
+	ln -sf ../../libunwind src/llvm/projects/libunwind
 	# for CUDA 9.1+ support on LLVM 6:
 	#   git cherry-pick ccacb5ddbcbb10d9b3a4b7e2780875d1e5537063
 	cd src/llvm/tools/clang && git cherry-pick ccacb5ddbcbb10d9b3a4b7e2780875d1e5537063
@@ -239,6 +221,10 @@ do-build-%: %.configure_done
 
 .PHONY: do-conf-%
 
+.PHONY: do-checkout-%
+do-checkout-%:
+	git submodule update --init --recursive src/$$(echo $@ | sed -e 's,do-checkout-,,')
+
 .PRECIOUS: %.install_done
 %.install_done: %.build_done
 	@echo "-----------------------------------------------------------------------"
@@ -264,13 +250,9 @@ do-build-%: %.configure_done
 	touch $@
 
 .PRECIOUS: %.checkout_done
-%.checkout_done: src/%
+%.checkout_done:
 	@echo "-----------------------------------------------------------------------"
-	@echo "$@ done."
-	touch $@
-
-raw-jit-executor.checkout_done: src/raw-jit-executor
-	git submodule update --init --recursive
-	@echo "-----------------------------------------------------------------------"
-	@echo "$@ done."
+	@echo "-- $$(echo $@ | sed -e 's,_done,,')..."
+	make do-checkout-$$(echo $@ | sed -e 's,.checkout_done,,')
+	@echo "-- $$(echo $@ | sed -e 's,_done,,') done."
 	touch $@
