@@ -105,9 +105,16 @@ do-conf-rapidjson: rapidjson.checkout_done llvm
 # LLVM_ENABLE_EH: required for throwing exceptions
 # LLVM_ENABLE_RTTI: required for dynamic_cast
 # LLVM_REQUIRE_RTTI: required for dynamic_cast
+LLVM_TARGETS_TO_BUILD:= \
+$$(case $$(uname -m) in \
+	x86|x86_64) echo "X86;NVPTX";; \
+	ppc64le) echo "PowerPC;NVPTX";; \
+esac)
+
 do-conf-llvm: llvm.checkout_done
 	[ -d ${BUILD_DIR}/llvm ] || mkdir -p ${BUILD_DIR}/llvm
-	cd ${BUILD_DIR}/llvm && $(CMAKE3) ${SRC_DIR}/llvm \
+	cd ${BUILD_DIR}/llvm && \
+		$(CMAKE3) ${SRC_DIR}/llvm \
 		-DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
 		-DCMAKE_BUILD_TYPE=RelWithDebInfo \
 		-DLLVM_ENABLE_CXX11=ON \
@@ -118,7 +125,7 @@ do-conf-llvm: llvm.checkout_done
 		-DLLVM_REQUIRES_RTTI=ON \
 		-DBUILD_SHARED_LIBS=ON \
 		-DLLVM_USE_INTEL_JITEVENTS:BOOL=ON \
-		-DLLVM_TARGETS_TO_BUILD="X86;NVPTX" \
+		-DLLVM_TARGETS_TO_BUILD="${LLVM_TARGETS_TO_BUILD}" \
 		-Wno-dev 
 
 #######################################################################
