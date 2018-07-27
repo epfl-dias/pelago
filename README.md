@@ -1,16 +1,11 @@
 # pelaGos Project
 
-This project uses the PostgreSQL frontend (SQL parser, and query
-optimizer) and connects it to the ViDa engine, for an end-to-end
-experience.
-
 ## Requirements
 
  * Ubuntu 16.04 LTS
- * CMake
+ * CMake 3
  * GNU Make
  * git (to checkout this project and dependencies)
- * svn (to checkout & build LLVM)
  * C++ compiler & tools to bootstrap LLVM
 
 ## Building the project
@@ -65,22 +60,27 @@ Using the default settings, the following folder hierarchy will be created:
     │   ├── glog
     │   ├── gtest
     │   ├── llvm
-    │   ├── postgres
     │   ├── rapidjson
     │   └── raw-jit-executor
     ├── opt
     │   ├── bin
     │   ├── include
     │   ├── lib
-    │   ├── raw-jit-executor -> /localhome/sambuc/Projects/pelaGo/build/raw-jit-executor
+    │   ├── libexec
+    │   ├── raw
     │   └── share
     └── src
+        ├── clang
+        ├── compiler-rt
+        ├── coordinator
         ├── glog
         ├── gtest
+        ├── libcxx
+        ├── libcxxabi
+        ├── libunwind
         ├── llvm
-        ├── postgres
         ├── rapidjson
         └── raw-jit-executor
-    
-    20 directories
+
+    25 directories
 ```
