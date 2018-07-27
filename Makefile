@@ -71,6 +71,7 @@ do-conf-gtest: gtest.checkout_done llvm
 # Work around broken project
 	rm -rf ${BUILD_DIR}/gtest
 	cp -r ${SRC_DIR}/gtest ${BUILD_DIR}/gtest
+	cd ${BUILD_DIR}/gtest && rm -rf .git*
 	cd ${BUILD_DIR}/gtest && \
 		${COMMON_ENV} \
 		$(CMAKE3) .
@@ -79,6 +80,7 @@ do-conf-glog: glog.checkout_done llvm
 # Work around broken project
 	rm -rf ${BUILD_DIR}/glog
 	cp -r ${SRC_DIR}/glog ${BUILD_DIR}/glog
+	cd ${BUILD_DIR}/glog && rm -rf .git*
 	cd ${BUILD_DIR}/glog && autoreconf -fi .
 	cd ${BUILD_DIR}/glog && \
 		${COMMON_ENV} \
