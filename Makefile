@@ -206,7 +206,12 @@ showvars:
 
 .PHONY: dist-clean
 dist-clean: clean
-	-for f in glog gtest rapidjson llvm; \
+	-for f in \
+		clang libcxxabi llvm compiler-rt libcxx libunwind \
+		gtest \
+		glog \
+		rapidjson \
+		raw-jit-executor; \
 	do \
 		rm -rf ${SRC_DIR}/$${f}; \
 	done
