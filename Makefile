@@ -1,17 +1,19 @@
-PELAGOS_DIR	:= $(shell pwd)
+PROJECT_DIR	:= $(shell pwd)
 USER		?= $(shell id -un)
+JOBS		?= $$(( $$(grep processor /proc/cpuinfo|tail -1|cut -d: -f2) + 1))
 VERBOSE		?= 0
 
-SRC_DIR		?= ${PELAGOS_DIR}/src
-INSTALL_DIR	?= ${PELAGOS_DIR}/opt
-BUILD_DIR	?= ${PELAGOS_DIR}/build
+SRC_DIR		?= ${PROJECT_DIR}/src
+EXTERNAL_DIR	?= ${PROJECT_DIR}/external
+BSD_DIR		?= ${PROJECT_DIR}/src
+BSD_DIR		?= ${EXTERNAL_DIR}/bsd
+INSTALL_DIR	?= ${PROJECT_DIR}/opt
+BUILD_DIR	?= ${PROJECT_DIR}/build
 
-# CMAKE3		?= ~/cmake/bin/cmake
-CMAKE3		?= cmake
+CMAKE		?= cmake
 
-JOBS		?= $$(( $$(grep processor /proc/cpuinfo|tail -1|cut -d: -f2) + 1))
 
-all: raw-jit-executor
+all: llvm | raw-jit-executor
 	@make --no-print-directory show-config
 
 #######################################################################
@@ -59,8 +61,6 @@ do-build-llvm: llvm.configure_done
 #######################################################################
 # Configure targets
 #######################################################################
-# LD_LIBRARY_PATH=${INSTALL_DIR}/lib \
-
 COMMON_ENV := \
  PATH=${INSTALL_DIR}/bin:${PATH} \
  CC=${INSTALL_DIR}/bin/clang \
@@ -74,7 +74,7 @@ do-conf-gtest: gtest.checkout_done llvm
 	cd ${BUILD_DIR}/gtest && rm -rf .git*
 	cd ${BUILD_DIR}/gtest && \
 		${COMMON_ENV} \
-		$(CMAKE3) .
+		$(CMAKE) .
 
 do-conf-glog: glog.checkout_done llvm
 # Work around broken project
@@ -91,14 +91,14 @@ do-conf-raw-jit-executor: raw-jit-executor.checkout_done rapidjson glog gtest ll
 	[ -d ${BUILD_DIR}/raw-jit-executor ] || mkdir -p ${BUILD_DIR}/raw-jit-executor
 	cd ${BUILD_DIR}/raw-jit-executor && \
 		${COMMON_ENV} \
-		$(CMAKE3) ${SRC_DIR}/raw-jit-executor \
+		$(CMAKE) ${SRC_DIR}/raw-jit-executor \
 			-DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
 
 do-conf-rapidjson: rapidjson.checkout_done llvm
 	[ -d ${BUILD_DIR}/rapidjson ] || mkdir -p ${BUILD_DIR}/rapidjson
 	cd ${BUILD_DIR}/rapidjson && \
 		${COMMON_ENV} \
-		$(CMAKE3) ${SRC_DIR}/rapidjson/ \
+		$(CMAKE) ${SRC_DIR}/rapidjson/ \
 			-DCMAKE_INSTALL_PREFIX=${INSTALL_DIR}
 
 # LLVM_ENABLE_CXX11: Make sure everything compiles using C++11
@@ -113,8 +113,7 @@ esac)
 
 do-conf-llvm: llvm.checkout_done
 	[ -d ${BUILD_DIR}/llvm ] || mkdir -p ${BUILD_DIR}/llvm
-	cd ${BUILD_DIR}/llvm && \
-		$(CMAKE3) ${SRC_DIR}/llvm \
+	cd ${BUILD_DIR}/llvm && $(CMAKE) ${BSD_DIR}/llvm \
 		-DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
 		-DCMAKE_BUILD_TYPE=RelWithDebInfo \
 		-DLLVM_ENABLE_CXX11=ON \
@@ -126,37 +125,41 @@ do-conf-llvm: llvm.checkout_done
 		-DBUILD_SHARED_LIBS=ON \
 		-DLLVM_USE_INTEL_JITEVENTS:BOOL=ON \
 		-DLLVM_TARGETS_TO_BUILD="${LLVM_TARGETS_TO_BUILD}" \
-		-Wno-dev 
+		-Wno-dev
 
 #######################################################################
 # Checkout sources as needed
 #######################################################################
 
-.PRECIOUS: clang
-.PRECIOUS: compiler-rt
-.PRECIOUS: glog
-.PRECIOUS: gtest
-.PRECIOUS: libcxx
-.PRECIOUS: libcxxabi
-.PRECIOUS: libunwind
-.PRECIOUS: llvm
-.PRECIOUS: rapidjson
+.PRECIOUS: ${BSD_DIR}/clang
+.PRECIOUS: ${BSD_DIR}/compiler-rt
+.PRECIOUS: ${BSD_DIR}/libcxx
+.PRECIOUS: ${BSD_DIR}/libcxxabi
+.PRECIOUS: ${BSD_DIR}/libunwind
+.PRECIOUS: ${BSD_DIR}/llvm
+.PRECIOUS: ${BSD_DIR}/glog
+.PRECIOUS: ${BSD_DIR}/gtest
+.PRECIOUS: ${BSD_DIR}/rapidjson
 
 do-checkout-llvm:
 	# No way of adding from a top level submodules within sub-
 	# modules, so stickying to this method.
-	git submodule update --init --recursive src/llvm src/clang src/compiler-rt src/libcxx src/libcxxabi src/libunwind
-	ln -sf ../../clang src/llvm/tools/clang
-	ln -sf ../../compiler-rt src/llvm/projects/compiler-rt
-	ln -sf ../../libcxx src/llvm/projects/libcxx
-	ln -sf ../../libcxxabi src/llvm/projects/libcxxabi
-	ln -sf ../../libunwind src/llvm/projects/libunwind
+	git submodule update --init --recursive ${BSD_DIR}/llvm ${BSD_DIR}/clang ${BSD_DIR}/compiler-rt ${BSD_DIR}/libcxx ${BSD_DIR}/libcxxabi ${BSD_DIR}/libunwind
+	ln -sf ../../clang ${BSD_DIR}/llvm/tools/clang
+	ln -sf ../../compiler-rt ${BSD_DIR}/llvm/projects/compiler-rt
+	ln -sf ../../libcxx ${BSD_DIR}/llvm/projects/libcxx
+	ln -sf ../../libcxxabi ${BSD_DIR}/llvm/projects/libcxxabi
+	ln -sf ../../libunwind ${BSD_DIR}/llvm/projects/libunwind
 	# for CUDA 9.1+ support on LLVM 6:
 	#   git cherry-pick ccacb5ddbcbb10d9b3a4b7e2780875d1e5537063
-	cd src/llvm/tools/clang && git cherry-pick ccacb5ddbcbb10d9b3a4b7e2780875d1e5537063
+	cd ${BSD_DIR}/llvm/tools/clang && git cherry-pick ccacb5ddbcbb10d9b3a4b7e2780875d1e5537063
 	# for CUDA 9.2 support on LLVM 6:
 	#   git cherry-pick 5f76154960a51843d2e49c9ae3481378e09e61ef
-	cd src/llvm/tools/clang && git cherry-pick 5f76154960a51843d2e49c9ae3481378e09e61ef
+	cd ${BSD_DIR}/llvm/tools/clang && git cherry-pick 5f76154960a51843d2e49c9ae3481378e09e61ef
+
+#######################################################################
+# Clean targets
+#######################################################################
 
 #######################################################################
 # Makefile utils / Generic targets
@@ -166,59 +169,56 @@ ifeq (${VERBOSE},0)
 .SILENT:
 endif
 
+.PHONY: help
+help:
+	@echo "-----------------------------------------------------------------------"
+	@echo "The general commands are available:"
+	@echo " * show-config		Display configuration variables such as paths,"
+	@echo " 			number of jobs and other tunable options."
+	@echo " * clean 		Remove trireme object files and binaries."
+	@echo " * dist-clean		Cleans the repository to a pristine state,"
+	@echo " 			just like after a new clone of the sources."
+	@echo "-----------------------------------------------------------------------"
+	@echo " In the following targets, '%' can be replaced by one of the external"
+	@echo " project among the following list: llvm, rapidjson, glog, gtest"
+	@echo ""
+	@echo " * clean-%		Removes the object files of '%'"
+	@echo " * dist-clean-%		Removes everything from project '%', forcing a"
+	@echo " 			build from scratch of '%'."
+	@echo "-----------------------------------------------------------------------"
+
 .PHONY: show-config
 show-config:
 	@echo "-----------------------------------------------------------------------"
 	@echo "Configuration:"
 	@echo "-----------------------------------------------------------------------"
-	@echo "PELAGOS_DIR		:= ${PELAGOS_DIR}"
+	@echo "PROJECT_DIR		:= ${PROJECT_DIR}"
 	@echo "SRC_DIR			:= ${SRC_DIR}"
+	@echo "EXTERNAL_DIR		:= ${EXTERNAL_DIR}"
+	@echo "BSD_DIR			:= ${BSD_DIR}"
 	@echo "BUILD_DIR		:= ${BUILD_DIR}"
 	@echo "INSTALL_DIR		:= ${INSTALL_DIR}"
 	@echo "JOBS			:= ${JOBS}"
 	@echo "USER			:= ${USER}"
 	@echo "VERBOSE			:= ${VERBOSE}"
-
-.PHONY: show-versions
-show-versions:
-	@echo "-----------------------------------------------------------------------"
-	@echo "Projects:"
-	@echo "-----------------------------------------------------------------------"
-	@echo "LLVM_REVISION		:= ${LLVM_REVISION}"
-	@echo "LLVM_CHECKOUT		:= ${LLVM_CHECKOUT}"
-	@echo "POSTGRES_CHECKOUT	:= ${POSTGRES_CHECKOUT}"
-	@echo "POSTGRES_REVISION	:= ${POSTGRES_REVISION}"
-	@echo "GLOG_CHECKOUT		:= ${GLOG_CHECKOUT}"
-	@echo "GLOG_REVISION		:= ${GLOG_REVISION}"
-	@echo "GTEST_CHECKOUT		:= ${GTEST_CHECKOUT}"
-	@echo "GTEST_REVISION		:= ${GTEST_REVISION}"
-	@echo "RAPIDJSON_CHECKOUT	:= ${RAPIDJSON_CHECKOUT}"
-	@echo "RAPIDJSON_REVISION	:= ${RAPIDJSON_REVISION}"
-	@echo "RAW_CHECKOUT		:= ${RAW_CHECKOUT}"
-	@echo "RAW_REVISION		:= ${RAW_REVISION}"
-
-.PHONY: showvars
-showvars:
-	@make --no-print-directory show-config
-	@echo
-	@make --no-print-directory show-versions
 	@echo "-----------------------------------------------------------------------"
 
 .PHONY: dist-clean
-dist-clean: clean
-	-for f in \
-		clang libcxxabi llvm compiler-rt libcxx libunwind \
-		gtest \
-		glog \
-		rapidjson \
-		raw-jit-executor; \
-	do \
-		rm -rf ${SRC_DIR}/$${f}; \
-	done
+dist-clean:
+	-rm -rf ${EXTERNAL_DIR}
+	-git clean -dxf .
 
 .PHONY: clean
-clean:
-	git clean -dxf .
+clean: clean-raw-jit-executor
+
+PHONY: dist-clean-%
+dist-clean-%: clean-%
+	-rm -rf  ${EXTERNAL_DIR}/*/$$(echo $@ | sed -e 's,dist-clean-,,')
+
+.PHONY: clean-%
+clean-%:
+	-rm .$$(echo $@ | sed -e 's,clean-,,').*_done
+	-rm -rf  ${BUILD_DIR}/$$(echo $@ | sed -e 's,clean-,,')
 
 %: %.install_done
 
