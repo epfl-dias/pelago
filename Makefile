@@ -22,27 +22,27 @@ all: llvm | raw-jit-executor
 #######################################################################
 
 .PHONY: raw-jit-executor
-raw-jit-executor: raw-jit-executor.install_done
+raw-jit-executor: .raw-jit-executor.install_done
 	# This is the main tree, so do not shortcut it
-	rm raw-jit-executor.install_done
-	rm raw-jit-executor.build_done
+	rm .raw-jit-executor.install_done
+	rm .raw-jit-executor.build_done
 
 .PHONY: rapidjson
-rapidjson: rapidjson.install_done
+rapidjson: .rapidjson.install_done
 
 .PHONY: gtest
-gtest: gtest.install_done
+gtest: .gtest.install_done
 
 .PHONY: glog
-glog: glog.install_done
+glog: .glog.install_done
 
 .PHONY: llvm
-llvm: llvm.install_done
+llvm: .llvm.install_done
 
 #######################################################################
 # Install targets
 #######################################################################
-do-install-gtest: gtest.build_done
+do-install-gtest: .gtest.build_done
 	cd ${BUILD_DIR}/gtest/googlemock/gtest && \
 		cp *.a ${INSTALL_DIR}/lib && \
 		cp -r ${BUILD_DIR}/gtest/googletest/include/gtest \
@@ -54,7 +54,7 @@ do-install-gtest: gtest.build_done
 #######################################################################
 do-build-raw-jit-executor: glog gtest rapidjson
 
-do-build-llvm: llvm.configure_done
+do-build-llvm: .llvm.configure_done
 	cd ${BUILD_DIR}/llvm && \
 		make -j ${JOBS}
 
@@ -67,7 +67,7 @@ COMMON_ENV := \
  CXX=${INSTALL_DIR}/bin/clang++ \
  CPP=${INSTALL_DIR}/bin/clang\ -E
 
-do-conf-gtest: gtest.checkout_done llvm
+do-conf-gtest: .gtest.checkout_done llvm
 # Work around broken project
 	rm -rf ${BUILD_DIR}/gtest
 	cp -r ${SRC_DIR}/gtest ${BUILD_DIR}/gtest
@@ -76,7 +76,7 @@ do-conf-gtest: gtest.checkout_done llvm
 		${COMMON_ENV} \
 		$(CMAKE) .
 
-do-conf-glog: glog.checkout_done llvm
+do-conf-glog: .glog.checkout_done llvm
 # Work around broken project
 	rm -rf ${BUILD_DIR}/glog
 	cp -r ${SRC_DIR}/glog ${BUILD_DIR}/glog
@@ -87,14 +87,14 @@ do-conf-glog: glog.checkout_done llvm
 		ac_cv_have_libgflags=0 ac_cv_lib_gflags_main=no ./configure --prefix ${INSTALL_DIR}
 # sed -i 's/^#define HAVE_LIB_GFLAGS 1/#undef HAVE_LIB_GFLAGS/g' ${BUILD_DIR}/glog/src/config.h
 
-do-conf-raw-jit-executor: raw-jit-executor.checkout_done rapidjson glog gtest llvm
+do-conf-raw-jit-executor: .raw-jit-executor.checkout_done rapidjson glog gtest llvm
 	[ -d ${BUILD_DIR}/raw-jit-executor ] || mkdir -p ${BUILD_DIR}/raw-jit-executor
 	cd ${BUILD_DIR}/raw-jit-executor && \
 		${COMMON_ENV} \
 		$(CMAKE) ${SRC_DIR}/raw-jit-executor \
 			-DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
 
-do-conf-rapidjson: rapidjson.checkout_done llvm
+do-conf-rapidjson: .rapidjson.checkout_done llvm
 	[ -d ${BUILD_DIR}/rapidjson ] || mkdir -p ${BUILD_DIR}/rapidjson
 	cd ${BUILD_DIR}/rapidjson && \
 		${COMMON_ENV} \
@@ -111,7 +111,7 @@ $$(case $$(uname -m) in \
 	ppc64le) echo "PowerPC;NVPTX";; \
 esac)
 
-do-conf-llvm: llvm.checkout_done
+do-conf-llvm: .llvm.checkout_done
 	[ -d ${BUILD_DIR}/llvm ] || mkdir -p ${BUILD_DIR}/llvm
 	cd ${BUILD_DIR}/llvm && $(CMAKE) ${BSD_DIR}/llvm \
 		-DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
@@ -220,16 +220,16 @@ clean-%:
 	-rm .$$(echo $@ | sed -e 's,clean-,,').*_done
 	-rm -rf  ${BUILD_DIR}/$$(echo $@ | sed -e 's,clean-,,')
 
-%: %.install_done
+%: .%.install_done
 
 .PHONY: do-install-%
-do-install-%: %.build_done
+do-install-%: .%.build_done
 	[ -d ${INSTALL_DIR} ] || mkdir -p ${INSTALL_DIR}
 	cd ${BUILD_DIR}/$$(echo $@ | sed -e 's,do-install-,,') && \
 		make -j ${JOBS} install
 
 .PHONY: do-build-%
-do-build-%: %.configure_done
+do-build-%: .%.configure_done
 	cd ${BUILD_DIR}/$$(echo $@ | sed -e 's,do-build-,,') && \
 		make -j ${JOBS}
 
@@ -239,34 +239,34 @@ do-build-%: %.configure_done
 do-checkout-%:
 	git submodule update --init --recursive src/$$(echo $@ | sed -e 's,do-checkout-,,')
 
-.PRECIOUS: %.install_done
-%.install_done: %.build_done
+.PRECIOUS: .%.install_done
+.%.install_done: .%.build_done
 	@echo "-----------------------------------------------------------------------"
-	@echo "-- $$(echo $@ | sed -e 's,_done,,')..."
-	make do-install-$$(echo $@ | sed -e 's,.install_done,,')
-	@echo "-- $$(echo $@ | sed -e 's,_done,,') done."
+	@echo "-- $$(echo $@ | sed -e 's,^[.],,' -e 's,_done,,')..."
+	make do-install-$$(echo $@ | sed -e 's,^[.],,' -e 's,.install_done,,')
+	@echo "-- $$(echo $@ | sed -e 's,^[.],,' -e 's,_done,,') done."
 	touch $@
 
-.PRECIOUS: %.build_done
-%.build_done: %.configure_done
+.PRECIOUS: .%.build_done
+.%.build_done: .%.configure_done
 	@echo "-----------------------------------------------------------------------"
-	@echo "-- $$(echo $@ | sed -e 's,_done,,')..."
-	make do-build-$$(echo $@ | sed -e 's,.build_done,,')
-	@echo "-- $$(echo $@ | sed -e 's,_done,,') done."
+	@echo "-- $$(echo $@ | sed -e 's,^[.],,' -e 's,_done,,')..."
+	make do-build-$$(echo $@ | sed -e 's,^[.],,' -e 's,.build_done,,')
+	@echo "-- $$(echo $@ | sed -e 's,^[.],,' -e 's,_done,,') done."
 	touch $@
 
-.PRECIOUS: %.configure_done
-%.configure_done: %.checkout_done
+.PRECIOUS: .%.configure_done
+.%.configure_done: .%.checkout_done
 	@echo "-----------------------------------------------------------------------"
-	@echo "-- $$(echo $@ | sed -e 's,_done,,')..."
-	make do-conf-$$(echo $@ | sed -e 's,.configure_done,,')
-	@echo "-- $$(echo $@ | sed -e 's,_done,,') done."
+	@echo "-- $$(echo $@ | sed -e 's,^[.],,' -e 's,_done,,')..."
+	make do-conf-$$(echo $@ | sed -e 's,^[.],,' -e 's,.configure_done,,')
+	@echo "-- $$(echo $@ | sed -e 's,^[.],,' -e 's,_done,,') done."
 	touch $@
 
-.PRECIOUS: %.checkout_done
-%.checkout_done:
+.PRECIOUS: .%.checkout_done
+.%.checkout_done:
 	@echo "-----------------------------------------------------------------------"
-	@echo "-- $$(echo $@ | sed -e 's,_done,,')..."
-	make do-checkout-$$(echo $@ | sed -e 's,.checkout_done,,')
-	@echo "-- $$(echo $@ | sed -e 's,_done,,') done."
+	@echo "-- $$(echo $@ | sed -e 's,^[.],,' -e 's,_done,,')..."
+	make do-checkout-$$(echo $@ | sed -e 's,^[.],,' -e 's,.checkout_done,,')
+	@echo "-- $$(echo $@ | sed -e 's,^[.],,' -e 's,_done,,') done."
 	touch $@
