@@ -5,8 +5,8 @@ VERBOSE		?= 0
 
 SRC_DIR		?= ${PROJECT_DIR}/src
 EXTERNAL_DIR	?= ${PROJECT_DIR}/external
-BSD_DIR		?= ${PROJECT_DIR}/src
 BSD_DIR		?= ${EXTERNAL_DIR}/bsd
+MIT_DIR		?= ${EXTERNAL_DIR}/mit
 INSTALL_DIR	?= ${PROJECT_DIR}/opt
 BUILD_DIR	?= ${PROJECT_DIR}/build
 
@@ -70,7 +70,7 @@ COMMON_ENV := \
 do-conf-gtest: .gtest.checkout_done llvm
 # Work around broken project
 	rm -rf ${BUILD_DIR}/gtest
-	cp -r ${SRC_DIR}/gtest ${BUILD_DIR}/gtest
+	cp -r ${BSD_DIR}/gtest ${BUILD_DIR}/gtest
 	cd ${BUILD_DIR}/gtest && rm -rf .git*
 	cd ${BUILD_DIR}/gtest && \
 		${COMMON_ENV} \
@@ -79,7 +79,7 @@ do-conf-gtest: .gtest.checkout_done llvm
 do-conf-glog: .glog.checkout_done llvm
 # Work around broken project
 	rm -rf ${BUILD_DIR}/glog
-	cp -r ${SRC_DIR}/glog ${BUILD_DIR}/glog
+	cp -r ${BSD_DIR}/glog ${BUILD_DIR}/glog
 	cd ${BUILD_DIR}/glog && rm -rf .git*
 	cd ${BUILD_DIR}/glog && autoreconf -fi .
 	cd ${BUILD_DIR}/glog && \
@@ -98,7 +98,7 @@ do-conf-rapidjson: .rapidjson.checkout_done llvm
 	[ -d ${BUILD_DIR}/rapidjson ] || mkdir -p ${BUILD_DIR}/rapidjson
 	cd ${BUILD_DIR}/rapidjson && \
 		${COMMON_ENV} \
-		$(CMAKE) ${SRC_DIR}/rapidjson/ \
+		$(CMAKE) ${MIT_DIR}/rapidjson/ \
 			-DCMAKE_INSTALL_PREFIX=${INSTALL_DIR}
 
 # LLVM_ENABLE_CXX11: Make sure everything compiles using C++11
@@ -139,7 +139,7 @@ do-conf-llvm: .llvm.checkout_done
 .PRECIOUS: ${BSD_DIR}/llvm
 .PRECIOUS: ${BSD_DIR}/glog
 .PRECIOUS: ${BSD_DIR}/gtest
-.PRECIOUS: ${BSD_DIR}/rapidjson
+.PRECIOUS: ${MIT_DIR}/rapidjson
 
 do-checkout-llvm:
 	# No way of adding from a top level submodules within sub-
@@ -196,6 +196,7 @@ show-config:
 	@echo "SRC_DIR			:= ${SRC_DIR}"
 	@echo "EXTERNAL_DIR		:= ${EXTERNAL_DIR}"
 	@echo "BSD_DIR			:= ${BSD_DIR}"
+	@echo "MIT_DIR			:= ${MIT_DIR}"
 	@echo "BUILD_DIR		:= ${BUILD_DIR}"
 	@echo "INSTALL_DIR		:= ${INSTALL_DIR}"
 	@echo "JOBS			:= ${JOBS}"
@@ -237,7 +238,8 @@ do-build-%: .%.configure_done
 
 .PHONY: do-checkout-%
 do-checkout-%:
-	git submodule update --init --recursive src/$$(echo $@ | sed -e 's,do-checkout-,,')
+	git submodule update --init --recursive \
+		$$(git submodule status | grep $$(echo $@ | sed -e 's,do-checkout-,,') | cut -d ' ' -f 3)
 
 .PRECIOUS: .%.install_done
 .%.install_done: .%.build_done

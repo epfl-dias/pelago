@@ -3,35 +3,35 @@
 	url = git@gitlab.epfl.ch:DIAS/PROJECTS/caldera/raw-jit-executor.git
 	branch = gpu
 [submodule "src/rapidjson"]
-	path = src/rapidjson
+	path = external/mit/rapidjson
 	url = https://github.com/miloyip/rapidjson
 [submodule "src/gtest"]
-	path = src/gtest
+	path = external/bsd/gtest
 	url = https://github.com/google/googletest.git
 [submodule "src/glog"]
-	path = src/glog
+	path = external/bsd/glog
 	url = https://github.com/google/glog.git
 [submodule "src/clang"]
-	path = src/clang
+	path = external/bsd/clang
 	url = https://github.com/llvm-mirror/clang
 	branch = release_60
 [submodule "src/compiler-rt"]
-	path = src/compiler-rt
+	path = external/bsd/compiler-rt
 	url = https://github.com/llvm-mirror/compiler-rt
 	branch = release_60
 [submodule "src/libcxx"]
-	path = src/libcxx
+	path = external/bsd/libcxx
 	url = https://github.com/llvm-mirror/libcxx
 	branch = release_60
 [submodule "src/libcxxabi"]
-	path = src/libcxxabi
+	path = external/bsd/libcxxabi
 	url = https://github.com/llvm-mirror/libcxxabi
 	branch = release_60
 [submodule "src/libunwind"]
-	path = src/libunwind
+	path = external/bsd/libunwind
 	url = https://github.com/llvm-mirror/libunwind
 	branch = release_60
 [submodule "src/llvm"]
-	path = src/llvm
+	path = external/bsd/llvm
 	url = https://github.com/llvm-mirror/llvm
 	branch = release_60
