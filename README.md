@@ -20,7 +20,7 @@ You can access the online help with:
 
 To build the project, call `make`. Everything will be downloaded, configured, built and installed automatically.
 
-In order to speed up the development cycles each steps is marked as done by creating an hidden empty file in the root directory. To retrigger a step, and all the following steps a simple:
+In order to speed up the development cycles each steps is marked as done by creating a hidden empty file in the root directory. To retrigger a step, and all the following ones use a simple:
 
 ```sh
     $ touch .<project>.<step>_done
