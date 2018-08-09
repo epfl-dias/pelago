@@ -1,4 +1,4 @@
-# pelaGos Project
+# pelagos Project
 
 ## Requirements
 
@@ -8,17 +8,28 @@
  * git (to checkout this project and dependencies)
  * C++ compiler & tools to bootstrap LLVM
 
-## Building the project
+## Online help
 
-To build the project, call `make`. Everything will be downloaded,
-configured, built and installed automatically.
-
-To reduce development cycles each steps is marked as done by creating an
-empty file in the root directory. To retrigger a step, and all the
-following steps a simple:
+You can access the online help with:
 
 ```sh
-    $ touch <project>.<step>_done
+   $ make help
+```
+
+## Building the project
+
+To build the project, call `make`. Everything will be downloaded, configured, built and installed automatically.
+
+In order to speed up the development cycles each steps is marked as done by creating a hidden empty file in the root directory. To retrigger a step, and all the following ones use a simple:
+
+```sh
+    $ touch .<project>.<step>_done
+```
+
+To rebuild a specific external target, you can use:
+
+```sh
+    $ make clean-$(target)
 ```
 
 The build will be exectude using several default values, which can be
@@ -31,7 +42,7 @@ changed by specifying them in one of the following ways:
 
 To see the variables and their current values:
 ```sh
-    $ make showvars
+    $ make show-config
 ```
 
 ## Folder layout
@@ -43,18 +54,13 @@ To see the variables and their current values:
     ├── Makefile
     ├── README.md
     └── src
-        ├── postgres
-        └── raw-jit-executor
-    
-    3 directories, 2 files
+        └── coordinator
 ```
 
 ### After a successfull build of the project
 
-A set of `<project>.<step>_done` files will be generated at the root.
-
 Using the default settings, the following folder hierarchy will be created:
-```
+```shell
     .
     ├── build
     │   ├── glog
@@ -62,6 +68,18 @@ Using the default settings, the following folder hierarchy will be created:
     │   ├── llvm
     │   ├── rapidjson
     │   └── raw-jit-executor
+    ├── external
+    │   ├── bsd
+    │   │   ├── clang
+    │   │   ├── compiler-rt
+    │   │   ├── glog
+    │   │   ├── gtest
+    │   │   ├── libcxx
+    │   │   ├── libcxxabi
+    │   │   ├── libunwind
+    │   │   └── llvm
+    │   └── mit
+    │       └── rapidjson
     ├── opt
     │   ├── bin
     │   ├── include
@@ -70,17 +88,8 @@ Using the default settings, the following folder hierarchy will be created:
     │   ├── raw
     │   └── share
     └── src
-        ├── clang
-        ├── compiler-rt
         ├── coordinator
-        ├── glog
-        ├── gtest
-        ├── libcxx
-        ├── libcxxabi
-        ├── libunwind
-        ├── llvm
-        ├── rapidjson
+        ├── panorama
+        ├── planner
         └── raw-jit-executor
-
-    25 directories
 ```
