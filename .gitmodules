@@ -35,3 +35,9 @@
 	path = external/bsd/llvm
 	url = https://github.com/llvm-mirror/llvm
 	branch = release_60
+[submodule "src/planner"]
+	path = src/planner
+	url = git@gitlab.epfl.ch:DIAS/PROJECTS/caldera/sqlplanner.git
+[submodule "src/panorama"]
+	path = src/panorama
+	url = git@gitlab.epfl.ch:DIAS/PROJECTS/caldera/panorama.git

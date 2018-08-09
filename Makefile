@@ -13,8 +13,9 @@ BUILD_DIR	?= ${PROJECT_DIR}/build
 CMAKE		?= cmake
 
 
-all: llvm | raw-jit-executor
-	@make --no-print-directory show-config
+all: llvm | .planner.checkout_done .panorama.checkout_done raw-jit-executor
+	@echo "-----------------------------------------------------------------------"
+	@echo ""
 
 #######################################################################
 # top-level targets, checks if a call to make is required before
