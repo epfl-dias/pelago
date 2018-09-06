@@ -13,6 +13,7 @@ import re
 import json
 import socket
 import argparse
+import datetime
 from translator_scripts.list_inputs import createTest, get_inputs
 
 from apiclient.discovery import build
@@ -20,7 +21,6 @@ from httplib2 import Http
 from oauth2client import file, client, tools
 
 spreadsheetId = "" # "15RnMzj7YYNXxjScZ-GhHaXSFldluNVgxEbxT5extRtQ"
-
 
 parser = argparse.ArgumentParser(parents=[tools.argparser])
 parser.add_argument('--socket',
@@ -36,19 +36,35 @@ parser.add_argument('--q0',
                     help="First query index",
                     default=0,
                     type=int)
+parser.add_argument('--gspreadsheetId',
+                    action="store",
+                    help="google spreadsheets id to write the results, use with care OVERWRITES OLD ENTRIES!",
+                    default="",
+                    type=str)
+parser.add_argument('--sheetName',
+                    action="store",
+                    help="google spreadsheets sheet name",
+                    default="Timings "+datetime.datetime.now().strftime("%d/%m/%Y %H:%M.%S"),
+                    type=str)
 
-args = parser.parse_args()
+args            = parser.parse_args()
+spreadsheetsId  = args.gspreadsheetId
+sheetName       = args.sheetName
+q_id            = args.q0;
 
+service = None
 
-
-# Setup the Sheets API
-SCOPES = 'https://www.googleapis.com/auth/spreadsheets'
-store = file.Storage('token.json')
-creds = store.get()
-if not creds or creds.invalid:
-    flow = client.flow_from_clientsecrets('credentials.json', SCOPES)
-    creds = tools.run_flow(flow, store, args)
-service = build('sheets', 'v4', http=creds.authorize(Http()))
+def init_gspreadsheet():
+    global service
+    if spreadsheetsId != "":
+        # Setup the Sheets API
+        SCOPES = 'https://www.googleapis.com/auth/spreadsheets'
+        store = file.Storage('token.json')
+        creds = store.get()
+        if not creds or creds.invalid:
+            flow = client.flow_from_clientsecrets('credentials.json', SCOPES)
+            creds = tools.run_flow(flow, store, args)
+        service = build('sheets', 'v4', http=creds.authorize(Http()))
 
 wsize = 0
 values = [] 
@@ -74,20 +90,21 @@ def sheets_flush(q_id):
         result = service.spreadsheets().values().update(
             spreadsheetId=spreadsheetId, 
             valueInputOption='USER_ENTERED',
-            range='Timings!B' + str(q_id + 2 - len(values) + 1) + ':' + colnum_string(len(values[0]) + 2) + str(q_id + 2), # q_id is 0-based
+            range=sheetName + '!B' + str(q_id + 2 - len(values) + 1) + ':' + colnum_string(len(values[0]) + 2) + str(q_id + 2), # q_id is 0-based
             body=body).execute()
         print('{0} cells updated.'.format(result.get('updatedCells')))
     wsize  = 0
     values = []
 
-def sheets_append(x, q_id):
-    global wsize, values;
+def sheets_append(x):
+    global wsize, values, q_id;
+    q_id = q_id + 1
     wsize = wsize + 1
     values.append(x)
     
     if wsize < 50: return
     
-    sheets_flush(q_id)
+    sheets_flush(q_id - 1)
 
 HOST = 'localhost'
 RECV_SIZE = 1024
@@ -305,7 +322,8 @@ def init_socket(host, port):
 
 
 if __name__ == "__main__":
-    q_id = args.q0;
+    init_gspreadsheet();
+    
     if(args.socket):
         init_socket(HOST, args.port)
     else:
@@ -375,12 +393,11 @@ if __name__ == "__main__":
                             if create_test is None or gentests_exec:
                                 (wplan_ms, wexec_ms,
                                     Tcodegen, Texec) = executor.execute_plan(plan)
-                                q_id = q_id + 1
                                 if (timings):
                                     t2 = time.time()
                                     total_ms = (t2 - t0) * 1000
                                     plan_ms = (t1 - t0) * 1000
-                                    sheets_append(['Timing', total_ms, plan_ms, wplan_ms, wexec_ms, Tcodegen, Texec], q_id - 1)
+                                    sheets_append(['Timing', total_ms, plan_ms, wplan_ms, wexec_ms, Tcodegen, Texec])
                                     if timings_csv:
                                         print('Timing,' + 
                                               '%.2f,' % (total_ms) +
