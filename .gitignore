@@ -5,3 +5,6 @@ build
 *_done
 **.pyc
 src/coordinator/plan.json
+# DO NOT INCLUDE Credential and tokens in the version control!
+credentials.json
+token.json

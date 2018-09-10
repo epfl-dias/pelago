@@ -45,6 +45,12 @@ To see the variables and their current values:
     $ make show-config
 ```
 
+### Install coordinator dependencies
+
+```sh
+    pip install --user --upgrade < src/coordinator/requirements.txt
+```
+
 ## Folder layout
 
 ### After checkout of the project
