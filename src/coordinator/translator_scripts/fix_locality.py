@@ -68,6 +68,7 @@ def fixlocality_operator(obj, explicit_memcpy=True, target=None):
                         mem_mov_local_to["partitioning"] = obj["input"]["partitioning"]
                         mem_mov_local_to["dop"] = obj["dop"]
                     mem_mov_local_to["slack"] = 4
+                    # mem_mov_local_to = fixlocality_operator(obj[inp], explicit_memcpy, None)
                     mem_mov["slack"] = 4
                 else:
                     mem_mov_local_to = fixlocality_operator(obj[inp], explicit_memcpy, None)

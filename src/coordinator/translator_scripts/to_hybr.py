@@ -32,9 +32,10 @@ def convert(obj, cpu_dop, gpu_dop, to_cpu, only_convert = False):
         new_obj["split_id"] = obj["split_id"]
         obj["producers"] = 1
         new_obj["gpu"] = False
+        new_obj["slack"] = 8
         if to_cpu:
             obj["numOfParents"] = cpu_dop
-            new_obj["numOfParents"] = gpu_dop
+            new_obj["numOfParents"] = 2
             new_obj["projections"] = copy.deepcopy(obj["projections"])
             new_obj["input"] = convert(obj["input"], cpu_dop, gpu_dop, True, True)
             if "target" in obj:
@@ -42,8 +43,8 @@ def convert(obj, cpu_dop, gpu_dop, to_cpu, only_convert = False):
                 if obj["input"]["operator"] == "mem-broadcast-device":
                     obj["input"]["num_of_targets"] = cpu_dop
                     new_obj["input"] = copy.deepcopy(obj["input"])
-                    new_obj["input"]["num_of_targets"] = gpu_dop
-                    # new_obj["input"]["always_share"] = True
+                    new_obj["input"]["num_of_targets"] = 2
+                    new_obj["input"]["always_share"] = True
                     p = obj["input"]["output"][-1]
                     new_obj["target"] = {
                                 "expression": "recordProjection",

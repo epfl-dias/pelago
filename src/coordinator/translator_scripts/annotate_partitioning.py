@@ -73,7 +73,8 @@ def mark_partitioning(obj, out_dop, cpu_dop, gpu_dop):
                 obj["broadcast-based"] = True
                 obj["partitioning"] = []
                 obj["dop"] = sel_dop(obj, cpu_dop, gpu_dop)
-                obj["maxBuildInputSize"] = max(int(obj["maxBuildInputSize"] / (max(sel_dop(obj, cpu_dop, gpu_dop)/2.0, 1))), 128*1024*1024) #16*1024*1024)#128*1024*1024)
+                # obj["maxBuildInputSize"] = max(int(obj["maxBuildInputSize"] / (max(sel_dop(obj, cpu_dop, gpu_dop)/2.0, 1))), 128*1024*1024) #16*1024*1024)#128*1024*1024)
+                obj["maxBuildInputSize"] = min(int(obj["maxBuildInputSize"])*2, 128*1024*1024) #16*1024*1024)#128*1024*1024)
                 obj["hash_bits"]         = min(int(ceil(log(2 * obj["maxBuildInputSize"], 2))), obj["hash_bits"])  # TODO: reconsider
                 return obj["dop"]
             else:
