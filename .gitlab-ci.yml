@@ -1,0 +1,304 @@
+#############################################################################
+# gitlab-runner:docker executor options
+image: chapeiro/pelago-build:latest
+# - Add support for docker-in-docker tests / build processes
+ 
+#############################################################################
+variables:
+  GIT_SUBMODULE_STRATEGY: recursive
+
+#############################################################################
+stages:
+ - Configure            # Environment configuration
+
+ - Check Out            # When extra steps are needed to checkout the sources
+
+ - Build Tools          # When extra tools are required
+
+ - Build Libraries      # When extra libraries are required 
+
+ - Build                # Build the project
+
+ - Install              # Install the software so it can be run for tests
+
+ - Test                 # Functional tests
+
+ - Benchmark            # Performance tests (need to be tagged in order to be
+                        # run on a noise-free system)
+
+ - Package              # Create archives to be installed
+
+ - Publish              # Publish the packages
+
+ - Build Profile        # Build the project with profiling information
+ 
+ - Profile              # Profile using known workload
+
+#############################################################################
+# Helper Templates
+
+
+#----------------------------------------------------------------------------
+# Caching policies templates
+.cache: &cache
+ tags:
+  - pelago
+ # cache:
+ #  key: "${CI_COMMIT_REF_SLUG}"
+ #  paths:
+ #    - build/
+ #    - opt/
+ #    - .*done
+ before_script:
+  - cache_path=$(pwd | sed "s/^\/builds/\/cache/g")/${CI_COMMIT_REF_SLUG}-${CI_COMMIT_SHA}
+  - mkdir -p ${cache_path}/build ${cache_path}/opt 
+  - ln -s ${cache_path}/build build
+  - ln -s ${cache_path}/opt opt
+  - cp -p -t . ${cache_path}/.*done || true
+  # TODO: we should probably remove the next line and fix that in raw-jit-executor
+  - ln -s /data/ssbm100 src/raw-jit-executor/inputs/ssbm100
+ after_script:
+  # we have to recalculate cache_path here
+  - cache_path=$(pwd | sed "s/^\/builds/\/cache/g")/${CI_COMMIT_REF_SLUG}-${CI_COMMIT_SHA}
+  - echo ${cache_path}
+  - cp -p -t ${cache_path} .*done || true
+
+.cache: &cache_profile
+ cache:
+  key: "${CI_COMMIT_REF_SLUG}-profile"
+  paths:
+    - build/
+    - opt/
+    - .*done
+
+#----------------------------------------------------------------------------
+# Execution restrictions templates
+.restrict_precommit: &restrict_precommit
+ except:
+  - master
+  - tags
+
+.restrict_postcommit: &restrict_postcommit
+ only:
+  - master
+  - tags
+
+.restrict_latest: &restrict_latest
+ except:
+  - tags
+ only:
+  - master
+
+.restrict_release: &restrict_release
+ only:
+  - tags
+
+
+
+#----------------------------------------------------------------------------
+# Job templates
+.test: &test
+ stage: Test
+ cache:
+  policy: pull
+ <<: *cache
+
+.benchmark: &benchmark
+ stage: Benchmark
+ cache:
+  policy: pull
+ <<: *cache
+
+#############################################################################
+# Example jobs
+#----------------------------------------------------------------------------
+
+# Workaround until we replace the docker image
+.configure-packages:
+ stage: Configure
+ script:
+  - echo "Configure... done"
+ <<: *cache
+ <<: *restrict_precommit
+
+# Check-out environment
+.check-out-submodules:
+ stage: Check Out
+ script:
+  - echo "Check Out... done"
+ <<: *cache
+ <<: *restrict_precommit
+
+#----------------------------------------------------------------------------
+# Setup build environment
+build-tools:
+ stage: Build Tools
+ script:
+  - git config --global user.name "Pelago CI"
+  - git config --global user.email ""
+  - make llvm &> llvm_build_log.txt || (tail -c 512k llvm_build_log.txt && exit 1)
+  - echo "Building tools... done"
+ <<: *cache
+ <<: *restrict_precommit
+
+build-libraries:
+ stage: Build Libraries
+ script:
+  - make external-libs &> external_libs_build_log.txt || (tail -c 512k external_libs_build_log.txt && exit 1)
+  - echo "Building external libs... done"
+ <<: *cache
+ <<: *restrict_precommit
+
+#----------------------------------------------------------------------------
+# Setup test environment
+build:
+ stage: Build
+ script:
+  - make
+  - echo "Building... done"
+ <<: *cache
+ <<: *restrict_precommit
+
+.install:
+ stage: Install
+ script:
+  - echo "Installing... done"
+ <<: *cache
+ <<: *restrict_precommit
+
+#----------------------------------------------------------------------------
+# Functional Tests
+1/8 test - Threads:
+ <<: *test
+ script:
+  - make &> check_installed.txt || (tail -c 512k check_installed.txt && exit 1) # make sure that everything is compiled
+  - cd opt/raw && ./unit-tests-threads &> thread_test_log.txt || (tail -c 512k thread_test_log.txt && exit 1)
+
+2/8 test - Plan Parsing:
+ <<: *test
+ script:
+  - make &> check_installed.txt || (tail -c 512k check_installed.txt && exit 1) # make sure that everything is compiled
+  - cd opt/raw && ./unit-tests-plan-parsing &> plan_parsing_test_log.txt || (tail -c 512k plan_parsing_test_log.txt && exit 1)
+ allow_failure: true
+
+3/8 test - JSON:
+ <<: *test
+ script:
+  - make &> check_installed.txt || (tail -c 512k check_installed.txt && exit 1) # make sure that everything is compiled
+  - cd opt/raw && ./unit-tests-json &> json_test_log.txt || (tail -c 512k json_test_log.txt && exit 1)
+ allow_failure: true
+
+4/8 test - Joins:
+ <<: *test
+ script:
+  - make &> check_installed.txt || (tail -c 512k check_installed.txt && exit 1) # make sure that everything is compiled
+  - cd opt/raw && ./unit-tests-joins &> joins_test_log.txt || (tail -c 512k joins_test_log.txt && exit 1)
+ allow_failure: true
+
+5/8 test - Output:
+ <<: *test
+ script:
+  - make &> check_installed.txt || (tail -c 512k check_installed.txt && exit 1) # make sure that everything is compiled
+  - cd opt/raw && ./unit-tests-output &> output_test_log.txt || (tail -c 512k output_test_log.txt && exit 1)
+ allow_failure: true
+
+6/8 test - GPU SSB SF100:
+ <<: *test
+ script:
+  - make &> check_installed.txt || (tail -c 512k check_installed.txt && exit 1) # make sure that everything is compiled
+  - cd opt/raw && ./unit-tests-gpu-ssb &> gpu_ssb_test_log.txt || (tail -c 512k gpu_ssb_test_log.txt && exit 1)
+
+7/8 test - CPU SSB SF100:
+ <<: *test
+ script:
+  - make &> check_installed.txt || (tail -c 512k check_installed.txt && exit 1) # make sure that everything is compiled
+  - cd opt/raw && ./unit-tests-cpu-ssb &> cpu_ssb_test_log.txt || (tail -c 512k cpu_ssb_test_log.txt && exit 1)
+
+8/8 test - Hybrid SSB SF100:
+ <<: *test
+ script:
+  - make &> check_installed.txt || (tail -c 512k check_installed.txt && exit 1) # make sure that everything is compiled
+  - cd opt/raw && ./unit-tests-hyb-ssb &> hyb_ssb_test_log.txt || (tail -c 512k hyb_ssb_test_log.txt && exit 1)
+
+#----------------------------------------------------------------------------
+# Performance Tests
+# unhide the jobs by removing the leading '.'
+.1/2 benchmark:
+ <<: *benchmark
+ script:
+  - echo "Benchmark 2... done"
+
+.2/2 benchmark:
+ <<: *benchmark
+ script:
+  - echo "Benchmark 2... done"
+
+#----------------------------------------------------------------------------
+# Execution Profiling 
+# unhide the jobs by removing the leading '.'
+.build profile:
+ stage: Build Profile
+ script:
+  - echo "Building Dependencies... done"
+  - echo "Building... done"
+  - echo "Installing... done"
+ when: manual
+ <<: *cache_profile
+ <<: *restrict_precommit
+
+.1/2 profile:
+ stage: Profile
+ script:
+  - echo "Running workload 1... done"
+  - echo "Extracting profiling statistics"
+ when: manual
+ cache:
+  policy: pull
+ <<: *cache_profile
+ <<: *restrict_precommit
+
+.2/2 profile:
+ stage: Profile
+ script:
+  - echo "Running workload 2... done"
+  - echo "Extracting profiling statistics"
+ when: manual
+ cache:
+  policy: pull
+ <<: *cache_profile
+ <<: *restrict_precommit
+
+#----------------------------------------------------------------------------
+# Packaging & distribution
+.tar:
+ stage: Package
+ script:
+  - echo "Generating tar... done"
+ <<: *cache
+ <<: *restrict_postcommit
+
+.tar:latest:
+ stage: Publish
+ script:
+  - echo "Publishing HEAD... done"
+ artifacts:
+  name: "$CI_PROJECT_NAME-g$CI_COMMIT_SHA"
+  paths:
+   - pkg/
+ cache:
+  policy: pull
+ <<: *cache
+ <<: *restrict_latest
+
+.tar:release:
+ stage: Publish
+ script:
+  - echo "Publishing release... done"
+ artifacts:
+  name: "$CI_PROJECT_NAME-$CI_COMMIT_TAG"
+  paths:
+   - pkg/
+ cache:
+  policy: pull
+ <<: *cache
+ <<: *restrict_release

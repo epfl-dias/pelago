@@ -1,0 +1,10 @@
+git
+make
+cmake
+libnuma1
+libnuma-dev
+npm
+ssh
+doxygen
+autoconf
+libtool

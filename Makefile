@@ -70,6 +70,7 @@ COMMON_ENV := \
 
 do-conf-gtest: .gtest.checkout_done llvm
 # Work around broken project
+	[ -d ${BUILD_DIR} ] || mkdir -p ${BUILD_DIR}
 	rm -rf ${BUILD_DIR}/gtest
 	cp -r ${BSD_DIR}/gtest ${BUILD_DIR}/gtest
 	cd ${BUILD_DIR}/gtest && rm -rf .git*
@@ -79,6 +80,7 @@ do-conf-gtest: .gtest.checkout_done llvm
 
 do-conf-glog: .glog.checkout_done llvm
 # Work around broken project
+	[ -d ${BUILD_DIR} ] || mkdir -p ${BUILD_DIR}
 	rm -rf ${BUILD_DIR}/glog
 	cp -r ${BSD_DIR}/glog ${BUILD_DIR}/glog
 	cd ${BUILD_DIR}/glog && rm -rf .git*
@@ -88,7 +90,10 @@ do-conf-glog: .glog.checkout_done llvm
 		ac_cv_have_libgflags=0 ac_cv_lib_gflags_main=no ./configure --prefix ${INSTALL_DIR}
 # sed -i 's/^#define HAVE_LIB_GFLAGS 1/#undef HAVE_LIB_GFLAGS/g' ${BUILD_DIR}/glog/src/config.h
 
-do-conf-raw-jit-executor: .raw-jit-executor.checkout_done rapidjson glog gtest llvm
+.PHONY: external-libs
+external-libs: rapidjson glog gtest llvm
+
+do-conf-raw-jit-executor: .raw-jit-executor.checkout_done external-libs
 	[ -d ${BUILD_DIR}/raw-jit-executor ] || mkdir -p ${BUILD_DIR}/raw-jit-executor
 	cd ${BUILD_DIR}/raw-jit-executor && \
 		${COMMON_ENV} \
@@ -112,6 +117,7 @@ $$(case $$(uname -m) in \
 	ppc64le) echo "PowerPC;NVPTX";; \
 esac)
 
+#use: LLVM_ENABLE_CXX1Z
 do-conf-llvm: .llvm.checkout_done
 	[ -d ${BUILD_DIR}/llvm ] || mkdir -p ${BUILD_DIR}/llvm
 	cd ${BUILD_DIR}/llvm && $(CMAKE) ${BSD_DIR}/llvm \
@@ -232,6 +238,7 @@ do-install-%: .%.build_done
 
 .PHONY: do-build-%
 do-build-%: .%.configure_done
+	[ -d ${BUILD_DIR} ] || mkdir -p ${BUILD_DIR}
 	cd ${BUILD_DIR}/$$(echo $@ | sed -e 's,do-build-,,') && \
 		make -j ${JOBS}
 
