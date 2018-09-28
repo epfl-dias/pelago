@@ -7,6 +7,8 @@
  * GNU Make
  * git (to checkout this project and dependencies)
  * C++ compiler & tools to bootstrap LLVM
+ * And any other packages listed in `requirements.txt`
+    * Under Ubuntu you can install them using: `apt install $(cat requirements.txt)`
 
 ## Online help
 

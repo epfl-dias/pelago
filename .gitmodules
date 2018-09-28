@@ -1,6 +1,6 @@
 [submodule "src/raw-jit-executor"]
 	path = src/raw-jit-executor
-	url = git@gitlab.epfl.ch:DIAS/PROJECTS/caldera/raw-jit-executor.git
+	url = ../raw-jit-executor.git
 	branch = gpu
 [submodule "src/rapidjson"]
 	path = external/mit/rapidjson
@@ -37,7 +37,7 @@
 	branch = release_60
 [submodule "src/planner"]
 	path = src/planner
-	url = git@gitlab.epfl.ch:DIAS/PROJECTS/caldera/sqlplanner.git
+	url = ../sqlplanner.git
 [submodule "src/panorama"]
 	path = src/panorama
-	url = git@gitlab.epfl.ch:DIAS/PROJECTS/caldera/panorama.git
+	url = ../panorama.git
