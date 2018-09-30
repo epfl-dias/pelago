@@ -13,7 +13,7 @@ BUILD_DIR	?= ${PROJECT_DIR}/build
 CMAKE		?= cmake
 
 
-all: llvm | .planner.checkout_done .panorama.checkout_done raw-jit-executor SQLPlanner
+all: llvm | .panorama.checkout_done raw-jit-executor SQLPlanner planner
 	@echo "-----------------------------------------------------------------------"
 	@echo ""
 
@@ -112,10 +112,29 @@ do-conf-rapidjson: .rapidjson.checkout_done llvm
 			-DCMAKE_INSTALL_PREFIX=${INSTALL_DIR}
 
 do-conf-SQLPlanner: .SQLPlanner.checkout_done
-	[ -d ${SRC_DIR}/SQLPlanner/target ] || mkdir -p ${SRC_DIR}/SQLPlanner/target
+	cd ${SRC_DIR}/SQLPlanner && sbt clean
+
+${INSTALL_DIR}/raw/avatica-1.12.0.jar:
+	[ -d ${INSTALL_DIR}/raw ] || mkdir -p ${INSTALL_DIR}/raw
+	cd ${INSTALL_DIR}/raw && wget http://central.maven.org/maven2/org/apache/calcite/avatica/avatica/1.12.0/avatica-1.12.0.jar
 
 SQLPlanner: .SQLPlanner.configure_done
 	cd ${SRC_DIR}/SQLPlanner && sbt assembly
+
+do-conf-planner: .planner.checkout_done
+	[ -d ${SRC_DIR}/planner/target ] || mkdir -p ${SRC_DIR}/planner/target
+
+planner: .planner.configure_done ${INSTALL_DIR}/raw/avatica-1.12.0.jar
+	cd ${SRC_DIR}/planner && sbt assembly
+	# probably we should be carefull with the scala version!
+	# this will break with multiple scala versions!
+	cp ${SRC_DIR}/planner/target/scala-*/SQLPlanner-*.jar ${INSTALL_DIR}/raw/
+
+run_server: all
+	cd ${INSTALL_DIR}/raw && java -jar SQLPlanner-*.jar --server inputs/plans/schema.json
+
+run_client:
+	sqlline --color=true -u "jdbc:avatica:remote:url=http://localhost:8081;serialization=PROTOBUF"
 
 LLVM_TARGETS_TO_BUILD:= \
 $$(case $$(uname -m) in \
