@@ -50,7 +50,7 @@ To see the variables and their current values:
 ### Install coordinator dependencies
 
 ```sh
-    pip install --user --upgrade < src/coordinator/requirements.txt
+    pip install --user --upgrade --requirement src/coordinator/requirements.txt
 ```
 
 ## Folder layout

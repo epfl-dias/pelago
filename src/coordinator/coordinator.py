@@ -19,8 +19,11 @@ from translator_scripts.list_inputs import createTest, get_inputs
 from apiclient.discovery import build
 from httplib2 import Http
 from oauth2client import file, client, tools
+from google.oauth2 import service_account
+import googleapiclient.discovery
+from dateutil.tz import *
 
-spreadsheetId = "" # "15RnMzj7YYNXxjScZ-GhHaXSFldluNVgxEbxT5extRtQ"
+datetime_format = r"""%Y-%m-%dT%H:%M:%S%z"""
 
 parser = argparse.ArgumentParser(parents=[tools.argparser])
 parser.add_argument('--socket',
@@ -36,6 +39,9 @@ parser.add_argument('--q0',
                     help="First query index",
                     default=0,
                     type=int)
+parser.add_argument('--q0FromSheet',
+                    action="store_true",
+                    help="Get query index from sheet")
 parser.add_argument('--gspreadsheetId',
                     action="store",
                     help="google spreadsheets id to write the results, use with care OVERWRITES OLD ENTRIES!",
@@ -44,27 +50,43 @@ parser.add_argument('--gspreadsheetId',
 parser.add_argument('--sheetName',
                     action="store",
                     help="google spreadsheets sheet name",
-                    default="Timings "+datetime.datetime.now().strftime("%d/%m/%Y %H:%M.%S"),
+                    default="Timings "+datetime.datetime.now(tzlocal()).strftime(datetime_format),
+                    type=str)
+parser.add_argument('--commitLabel',
+                    action="store",
+                    help="commit label",
+                    default=datetime.datetime.now(tzlocal()).strftime("intermediate"),
+                    type=str)
+parser.add_argument('--commitTime',
+                    action="store",
+                    help="commit time",
+                    default=datetime.datetime.now(tzlocal()).strftime(datetime_format),
                     type=str)
 
 args            = parser.parse_args()
-spreadsheetsId  = args.gspreadsheetId
+spreadsheetId   = args.gspreadsheetId
 sheetName       = args.sheetName
+commitLabel     = args.commitLabel
+commitTime      = args.commitTime
 q_id            = args.q0;
+
+bench_time      = datetime.datetime.now(tzlocal()).strftime(datetime_format)
 
 service = None
 
 def init_gspreadsheet():
-    global service
-    if spreadsheetsId != "":
+    global service, q_id
+    if spreadsheetId != "":
         # Setup the Sheets API
-        SCOPES = 'https://www.googleapis.com/auth/spreadsheets'
-        store = file.Storage('token.json')
-        creds = store.get()
-        if not creds or creds.invalid:
-            flow = client.flow_from_clientsecrets('credentials.json', SCOPES)
-            creds = tools.run_flow(flow, store, args)
-        service = build('sheets', 'v4', http=creds.authorize(Http()))
+        SERVICE_ACCOUNT_FILE = 'logger_cred.json'
+        SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
+        credentials = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=SCOPES)
+        service = googleapiclient.discovery.build('sheets', 'v4',credentials=credentials)
+        if args.q0FromSheet:
+            values = service.spreadsheets().values().get(
+                spreadsheetId=spreadsheetId,
+                range=sheetName + '!A1:A1').execute().get('values', [q_id])
+            q_id = int(values[0][0])
 
 wsize = 0
 values = [] 
@@ -78,7 +100,7 @@ def colnum_string(n):
 
 def sheets_flush(q_id):
     global wsize, values;
-    if spreadsheetId != "":
+    if spreadsheetId != "" and len(values) > 0:
         # values = [x] 
         # values = assign.to_json(orient='values')
         # [
@@ -90,17 +112,25 @@ def sheets_flush(q_id):
         result = service.spreadsheets().values().update(
             spreadsheetId=spreadsheetId, 
             valueInputOption='USER_ENTERED',
-            range=sheetName + '!B' + str(q_id + 2 - len(values) + 1) + ':' + colnum_string(len(values[0]) + 2) + str(q_id + 2), # q_id is 0-based
+            range=sheetName + '!A' + str(q_id + 2 - len(values) + 1) + ':' + colnum_string(len(values[0]) + 1) + str(q_id + 2), # q_id is 0-based
             body=body).execute()
+        print('{0} cells updated.'.format(result.get('updatedCells')))
+        result = service.spreadsheets().values().update(
+            spreadsheetId=spreadsheetId, 
+            valueInputOption='USER_ENTERED',
+            range=sheetName + '!A1:A1',
+            body={'values': [[q_id + 1]]}).execute()
         print('{0} cells updated.'.format(result.get('updatedCells')))
     wsize  = 0
     values = []
+    
 
-def sheets_append(x):
+def sheets_append(x, label, sql_query, conf):
     global wsize, values, q_id;
     q_id = q_id + 1
     wsize = wsize + 1
-    values.append(x)
+    bench_date = r"""=DATEVALUE(LEFT(B_,10))+TIMEVALUE(MID(B_,12,8))-(IF(MID(B_,20,1) = "+",1,-1)*TIMEVALUE(MID(B_, 21, 2) & ":" & RIGHT(B_,2)))""".replace(r"""_""", str(q_id + 1))
+    values.append(['Timing', bench_time, commitTime, commitLabel, label, sql_query] + conf + x + ["=MATCH(P" + str(q_id + 1) + ",SORT(UNIQUE(P:P)),0)-1", r"""=TEXTJOIN(" ", false, Q""" + str(q_id + 1) + ", D" + str(q_id + 1) + ")", bench_date])
     
     if wsize < 50: return
     
@@ -344,10 +374,13 @@ if __name__ == "__main__":
                         line = raw_input('> ').strip()
                     is_test = re.sub('\s+', ' ', line.lower())                \
                                 .startswith(".create test ")
+                    is_warmup = re.sub('\s+', ' ', line.lower())                \
+                                .startswith(".warmup ")
                     is_test = is_test or re.sub('\s+', ' ', line.lower())     \
                                            .startswith("create test ")
                     if (line.lower().startswith("select ") or is_test):
                         create_test = None
+                        label_test  = None
                         if not line.lower().startswith("select"):
                             line = re.sub('\s+', ' ', line.lower())
                             m = re.match(".?create test ([a-zA-Z_0-9%]+) from(.*)", line)
@@ -356,6 +389,7 @@ if __name__ == "__main__":
                                 continue
                             create_test = m.group(1)
                             line = m.group(2).strip()
+                        label_test = create_test
                         if not gentests:
                             create_test = None
                         sql_query = line
@@ -397,7 +431,31 @@ if __name__ == "__main__":
                                     t2 = time.time()
                                     total_ms = (t2 - t0) * 1000
                                     plan_ms = (t1 - t0) * 1000
-                                    sheets_append(['Timing', total_ms, plan_ms, wplan_ms, wexec_ms, Tcodegen, Texec])
+                                    label = ""
+                                    conf  = [0, 0]
+                                    if label_test is not None:
+                                        ident = ""
+                                        if '%' in label_test:
+                                            if parallel:
+                                                ident = ident + "par"
+                                            else:
+                                                ident = ident + "seq"
+                                            if explicit_memcpy:
+                                                ident = ident + "_cpy"
+                                            else:
+                                                ident = ident + "_uva"
+                                            if hybrid:
+                                                ident = ident + "_hyb" + "_c" + str(num_of_cpus) + "g" + str(num_of_gpus)
+                                                conf  = [num_of_cpus, num_of_gpus]
+                                            elif cpu_only:
+                                                ident = ident + "_cpu" + str(num_of_cpus)
+                                                conf  = [num_of_cpus, 0]
+                                            else:
+                                                ident = ident + "_gpu" + str(num_of_gpus)
+                                                conf  = [0, num_of_gpus]
+                                        label = label_test.replace('%', ident)
+                                    if not is_warmup:
+                                        sheets_append([total_ms, plan_ms, wplan_ms, wexec_ms, Tcodegen, Texec], label, sql_query, conf)
                                     if timings_csv:
                                         print('Timing,' + 
                                               '%.2f,' % (total_ms) +
@@ -432,9 +490,11 @@ if __name__ == "__main__":
                                     else:
                                         ident = ident + "_uva"
                                     if hybrid:
-                                        ident = ident + "_hyb"
+                                        ident = ident + "_hyb" + "_c" + str(num_of_cpus) + "g" + str(num_of_gpus)
                                     elif cpu_only:
-                                        ident = ident + "_cpu"
+                                        ident = ident + "_cpu" + str(num_of_cpus)
+                                    else:
+                                        ident = ident + "_gpu" + str(num_of_gpus)
                                 create_test = create_test.replace('%', ident)
                                 plan_path = gentests_folder + "/plans/" + create_test + "_plan.json"
                                 with open(plan_path, 'w') as p:

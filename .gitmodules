@@ -41,3 +41,9 @@
 [submodule "src/panorama"]
 	path = src/panorama
 	url = ../panorama.git
+[submodule "src/SQLPlanner"]
+	path = src/SQLPlanner
+	url = ../sqlplanner.git
+[submodule "external/bsd/clang-tools-extra"]
+	path = external/bsd/clang-tools-extra
+	url = https://github.com/llvm-mirror/clang-tools-extra

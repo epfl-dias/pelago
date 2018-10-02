@@ -5,6 +5,10 @@ build
 *_done
 **.pyc
 src/coordinator/plan.json
+plan.json
+plan-calcite.json
+src/SQLPlanner/target
 # DO NOT INCLUDE Credential and tokens in the version control!
 credentials.json
 token.json
+logger_cred.json

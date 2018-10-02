@@ -13,7 +13,7 @@ BUILD_DIR	?= ${PROJECT_DIR}/build
 CMAKE		?= cmake
 
 
-all: llvm | .planner.checkout_done .panorama.checkout_done raw-jit-executor
+all: llvm | .planner.checkout_done .panorama.checkout_done raw-jit-executor SQLPlanner
 	@echo "-----------------------------------------------------------------------"
 	@echo ""
 
@@ -107,6 +107,12 @@ do-conf-rapidjson: .rapidjson.checkout_done llvm
 		$(CMAKE) ${MIT_DIR}/rapidjson/ \
 			-DCMAKE_INSTALL_PREFIX=${INSTALL_DIR}
 
+do-conf-SQLPlanner: .SQLPlanner.checkout_done
+	[ -d ${SRC_DIR}/SQLPlanner/target ] || mkdir -p ${SRC_DIR}/SQLPlanner/target
+
+SQLPlanner: .SQLPlanner.configure_done
+	cd ${SRC_DIR}/SQLPlanner && sbt assembly
+
 # LLVM_ENABLE_CXX11: Make sure everything compiles using C++11
 # LLVM_ENABLE_EH: required for throwing exceptions
 # LLVM_ENABLE_RTTI: required for dynamic_cast
@@ -151,12 +157,13 @@ do-conf-llvm: .llvm.checkout_done
 do-checkout-llvm:
 	# No way of adding from a top level submodules within sub-
 	# modules, so stickying to this method.
-	git submodule update --init --recursive ${BSD_DIR}/llvm ${BSD_DIR}/clang ${BSD_DIR}/compiler-rt ${BSD_DIR}/libcxx ${BSD_DIR}/libcxxabi ${BSD_DIR}/libunwind
+	git submodule update --init --recursive ${BSD_DIR}/llvm ${BSD_DIR}/clang ${BSD_DIR}/compiler-rt ${BSD_DIR}/libcxx ${BSD_DIR}/libcxxabi ${BSD_DIR}/libunwind ${BSD_DIR}/clang-tools-extra
 	ln -sf ../../clang ${BSD_DIR}/llvm/tools/clang
 	ln -sf ../../compiler-rt ${BSD_DIR}/llvm/projects/compiler-rt
 	ln -sf ../../libcxx ${BSD_DIR}/llvm/projects/libcxx
 	ln -sf ../../libcxxabi ${BSD_DIR}/llvm/projects/libcxxabi
 	ln -sf ../../libunwind ${BSD_DIR}/llvm/projects/libunwind
+	ln -sf ../../clang-tools-extra ${BSD_DIR}/llvm/tools/clang/tools/extra
 	# for CUDA 9.1+ support on LLVM 6:
 	#   git cherry-pick ccacb5ddbcbb10d9b3a4b7e2780875d1e5537063
 	cd ${BSD_DIR}/llvm/tools/clang && git cherry-pick ccacb5ddbcbb10d9b3a4b7e2780875d1e5537063

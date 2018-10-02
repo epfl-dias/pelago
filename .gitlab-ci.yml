@@ -60,12 +60,11 @@ stages:
  after_script:
   # we have to recalculate cache_path here
   - cache_path=$(pwd | sed "s/^\/builds/\/cache/g")/${CI_COMMIT_REF_SLUG}-${CI_COMMIT_SHA}
-  - echo ${cache_path}
   - cp -p -t ${cache_path} .*done || true
 
 .cache: &cache_profile
  cache:
-  key: "${CI_COMMIT_REF_SLUG}-profile"
+  key: "${CI_COMMIT_REF_SLUG}-${CI_COMMIT_SHA}-profile"
   paths:
     - build/
     - opt/
@@ -102,6 +101,7 @@ stages:
  cache:
   policy: pull
  <<: *cache
+ <<: *restrict_precommit
 
 .benchmark: &benchmark
  stage: Benchmark
@@ -223,6 +223,17 @@ build:
 #----------------------------------------------------------------------------
 # Performance Tests
 # unhide the jobs by removing the leading '.'
+bench:
+ stage: Benchmark
+ script:
+  - ln -s /data/credentials/logger_cred.json
+  - pip install --user --upgrade --requirement src/coordinator/requirements.txt
+  - make &> check_installed.txt || (cat check_installed.txt && exit 1) # make sure that everything is compiled
+  - python src/coordinator/coordinator.py --gspreadsheetId=1epbgvtEjiog41UWNX5RCfBgu4JcU4xdxuRNdQd0A1E0 --sheetName=diascld37 --commitLabel=${CI_COMMIT_SHA} --commitTime="$(TZ=UTC git show -s --format=%cd --date="format-local:%Y-%m-%dT%H:%M:%S%z")" --q0FromSheet < input_d100.sql &> bench_log.txt || (tail -c 512k bench_log.txt && exit 1)
+  - echo "Bench... done"
+ <<: *cache
+ <<: *restrict_precommit
+
 .1/2 benchmark:
  <<: *benchmark
  script:
