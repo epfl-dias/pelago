@@ -14,27 +14,31 @@
 [submodule "src/clang"]
 	path = external/bsd/clang
 	url = https://github.com/llvm-mirror/clang
-	branch = release_60
+	branch = release_70
 [submodule "src/compiler-rt"]
 	path = external/bsd/compiler-rt
 	url = https://github.com/llvm-mirror/compiler-rt
-	branch = release_60
+	branch = release_70
 [submodule "src/libcxx"]
 	path = external/bsd/libcxx
 	url = https://github.com/llvm-mirror/libcxx
-	branch = release_60
+	branch = release_70
 [submodule "src/libcxxabi"]
 	path = external/bsd/libcxxabi
 	url = https://github.com/llvm-mirror/libcxxabi
-	branch = release_60
+	branch = release_70
 [submodule "src/libunwind"]
 	path = external/bsd/libunwind
 	url = https://github.com/llvm-mirror/libunwind
-	branch = release_60
+	branch = release_70
 [submodule "src/llvm"]
 	path = external/bsd/llvm
 	url = https://github.com/llvm-mirror/llvm
-	branch = release_60
+	branch = release_70
+[submodule "external/bsd/clang-tools-extra"]
+	path = external/bsd/clang-tools-extra
+	url = https://github.com/llvm-mirror/clang-tools-extra
+	branch = release_70
 [submodule "src/planner"]
 	path = src/planner
 	url = ../sqlplanner.git
@@ -44,6 +48,3 @@
 [submodule "src/SQLPlanner"]
 	path = src/SQLPlanner
 	url = ../sqlplanner.git
-[submodule "external/bsd/clang-tools-extra"]
-	path = external/bsd/clang-tools-extra
-	url = https://github.com/llvm-mirror/clang-tools-extra

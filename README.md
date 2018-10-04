@@ -7,6 +7,7 @@
  * GNU Make
  * git (to checkout this project and dependencies)
  * C++ compiler & tools to bootstrap LLVM
+ * scala & sbt
  * And any other packages listed in `requirements.txt`
     * Under Ubuntu you can install them using: `apt install $(cat requirements.txt)`
 
@@ -16,6 +17,23 @@ You can access the online help with:
 
 ```sh
    $ make help
+```
+
+## Ubuntu instruction to install scala and SBT
+
+For Scala:
+
+```sh
+    $ sudo apt install scala scala-doc
+```
+
+For SBT:
+
+```sh
+    $ echo "deb https://dl.bintray.com/sbt/debian /" | sudo tee -a /etc/apt/sources.list.d/sbt.list
+    $ sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 2EE0EA64E40A89B84B2DF73499E82A75642AC823
+    $ sudo apt-get update
+    $ sudo apt-get install sbt
 ```
 
 ## Building the project

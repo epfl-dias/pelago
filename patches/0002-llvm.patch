@@ -1,0 +1,33 @@
+diff --git a/include/llvm/IR/BasicBlock.h b/include/llvm/IR/BasicBlock.h
+index 1ee1997..3a19721 100644
+--- a/include/llvm/IR/BasicBlock.h
++++ b/include/llvm/IR/BasicBlock.h
+@@ -185,13 +185,13 @@ public:
+   /// Return a const iterator range over the instructions in the block, skipping
+   /// any debug instructions.
+   iterator_range<filter_iterator<BasicBlock::const_iterator,
+-                                 std::function<bool(const Instruction &)>>>
++                                 std::function<bool(const Instruction &)> >>
+   instructionsWithoutDebug() const;
+ 
+   /// Return an iterator range over the instructions in the block, skipping any
+   /// debug instructions.
+   iterator_range<filter_iterator<BasicBlock::iterator,
+-                                 std::function<bool(Instruction &)>>>
++                                 std::function<bool(Instruction &)> >>
+   instructionsWithoutDebug();
+ 
+   /// Unlink 'this' from the containing function, but do not delete it.
+diff --git a/include/llvm/ADT/Optional.h b/include/llvm/ADT/Optional.h
+index 2811d5c..37f1920 100644
+--- a/include/llvm/ADT/Optional.h
++++ b/include/llvm/ADT/Optional.h
+@@ -35,7 +35,7 @@ public:
+   using value_type = T;
+ 
+   Optional(NoneType) {}
+-  explicit Optional() {}
++  Optional() {}
+ 
+   Optional(const T &y) : hasVal(true) { new (storage.buffer) T(y); }
+ 

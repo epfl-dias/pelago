@@ -29,10 +29,10 @@ raw-jit-executor: .raw-jit-executor.install_done
 	rm .raw-jit-executor.build_done
 
 .PHONY: rapidjson
-rapidjson: .rapidjson.install_done
+rapidjson: glog gtest .rapidjson.install_done
 
 .PHONY: gtest
-gtest: .gtest.install_done
+gtest: glog .gtest.install_done
 
 .PHONY: glog
 glog: .glog.install_done
@@ -100,11 +100,15 @@ do-conf-raw-jit-executor: .raw-jit-executor.checkout_done external-libs
 		$(CMAKE) ${SRC_DIR}/raw-jit-executor \
 			-DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
 
+# RapidJSON is a head-only library, but it will try to build documentation and
+# unit-tests unless explicitly told not to do so.
 do-conf-rapidjson: .rapidjson.checkout_done llvm
 	[ -d ${BUILD_DIR}/rapidjson ] || mkdir -p ${BUILD_DIR}/rapidjson
 	cd ${BUILD_DIR}/rapidjson && \
 		${COMMON_ENV} \
 		$(CMAKE) ${MIT_DIR}/rapidjson/ \
+			-DRAPIDJSON_BUILD_DOC=OFF \
+			-DRAPIDJSON_BUILD_TESTS=OFF \
 			-DCMAKE_INSTALL_PREFIX=${INSTALL_DIR}
 
 do-conf-SQLPlanner: .SQLPlanner.checkout_done
@@ -113,23 +117,21 @@ do-conf-SQLPlanner: .SQLPlanner.checkout_done
 SQLPlanner: .SQLPlanner.configure_done
 	cd ${SRC_DIR}/SQLPlanner && sbt assembly
 
-# LLVM_ENABLE_CXX11: Make sure everything compiles using C++11
-# LLVM_ENABLE_EH: required for throwing exceptions
-# LLVM_ENABLE_RTTI: required for dynamic_cast
-# LLVM_REQUIRE_RTTI: required for dynamic_cast
 LLVM_TARGETS_TO_BUILD:= \
 $$(case $$(uname -m) in \
 	x86|x86_64) echo "X86;NVPTX";; \
 	ppc64le) echo "PowerPC;NVPTX";; \
 esac)
 
-#use: LLVM_ENABLE_CXX1Z
+# LLVM_ENABLE_CXX11: Make sure everything compiles using C++11
+# LLVM_ENABLE_EH: required for throwing exceptions
+# LLVM_ENABLE_RTTI: required for dynamic_cast
+# LLVM_REQUIRE_RTTI: required for dynamic_cast
 do-conf-llvm: .llvm.checkout_done
 	[ -d ${BUILD_DIR}/llvm ] || mkdir -p ${BUILD_DIR}/llvm
 	cd ${BUILD_DIR}/llvm && $(CMAKE) ${BSD_DIR}/llvm \
 		-DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
 		-DCMAKE_BUILD_TYPE=RelWithDebInfo \
-		-DLLVM_ENABLE_CXX11=ON \
 		-DLLVM_ENABLE_ASSERTIONS=ON \
 		-DLLVM_ENABLE_PIC=ON \
 		-DLLVM_ENABLE_EH=ON \
@@ -157,19 +159,29 @@ do-conf-llvm: .llvm.checkout_done
 do-checkout-llvm:
 	# No way of adding from a top level submodules within sub-
 	# modules, so stickying to this method.
-	git submodule update --init --recursive ${BSD_DIR}/llvm ${BSD_DIR}/clang ${BSD_DIR}/compiler-rt ${BSD_DIR}/libcxx ${BSD_DIR}/libcxxabi ${BSD_DIR}/libunwind ${BSD_DIR}/clang-tools-extra
+	git submodule update --depth=1 --init --recursive \
+		${BSD_DIR}/llvm \
+		${BSD_DIR}/clang \
+		${BSD_DIR}/compiler-rt \
+		${BSD_DIR}/libcxx \
+		${BSD_DIR}/libcxxabi \
+		${BSD_DIR}/libunwind \
+		${BSD_DIR}/clang-tools-extra
 	ln -sf ../../clang ${BSD_DIR}/llvm/tools/clang
 	ln -sf ../../compiler-rt ${BSD_DIR}/llvm/projects/compiler-rt
 	ln -sf ../../libcxx ${BSD_DIR}/llvm/projects/libcxx
 	ln -sf ../../libcxxabi ${BSD_DIR}/llvm/projects/libcxxabi
 	ln -sf ../../libunwind ${BSD_DIR}/llvm/projects/libunwind
+	[ -d ${BSD_DIR}/llvm/tools/clang/tools ] || mkdir -p ${BSD_DIR}/llvm/tools/clang/tools
 	ln -sf ../../clang-tools-extra ${BSD_DIR}/llvm/tools/clang/tools/extra
-	# for CUDA 9.1+ support on LLVM 6:
-	#   git cherry-pick ccacb5ddbcbb10d9b3a4b7e2780875d1e5537063
-	cd ${BSD_DIR}/llvm/tools/clang && git cherry-pick ccacb5ddbcbb10d9b3a4b7e2780875d1e5537063
-	# for CUDA 9.2 support on LLVM 6:
-	#   git cherry-pick 5f76154960a51843d2e49c9ae3481378e09e61ef
-	cd ${BSD_DIR}/llvm/tools/clang && git cherry-pick 5f76154960a51843d2e49c9ae3481378e09e61ef
+	# Optional.h from LLVM 7.0 had some transformations that seem to confuse
+	# GCC, causing problems linking gcc-generated LLVM libraries to
+	# clang-generated code
+	cd ${BSD_DIR}/llvm && git apply ${PROJECT_DIR}/patches/0001-llvm-optional.h.patch
+	# BasicBlock.h header contains ">>>" which is causing problems when
+	# compiling for CUDA, as it confuses clang to believe it is part of
+	# a kernel launch
+	cd ${BSD_DIR}/llvm && git apply ${PROJECT_DIR}/patches/0002-llvm.patch
 
 #######################################################################
 # Clean targets
