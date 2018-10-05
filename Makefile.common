@@ -1,0 +1,248 @@
+#######################################################################
+# top-level targets, checks if a call to make is required before
+# calling it.
+#######################################################################
+
+.PHONY: llvm
+llvm: .llvm.install_done
+
+#######################################################################
+# Install targets
+#######################################################################
+
+#######################################################################
+# Build targets
+#######################################################################
+do-build-llvm: .llvm.configure_done
+	cd ${BUILD_DIR}/llvm && \
+		make -j ${JOBS}
+
+#######################################################################
+# Configure targets
+#######################################################################
+COMMON_ENV := \
+ PATH=${INSTALL_DIR}/bin:${PATH} \
+ CC=${INSTALL_DIR}/bin/clang \
+ CXX=${INSTALL_DIR}/bin/clang++ \
+ CPP=${INSTALL_DIR}/bin/clang\ -E
+
+# This reduces the on-disk storage, and speeds up the clones, but is not
+# yet well supported by all git version. So use only for white-listedcw
+# revisions of GIT.
+SHALLOW_LLVM_SUBMODULES:= \
+$$(case $$(git --version) in \
+	2.17.1) echo "--depth=1";; \
+	*) echo "";; \
+esac)
+
+LLVM_TARGETS_TO_BUILD:= \
+$$(case $$(uname -m) in \
+	x86|x86_64) echo "X86;NVPTX";; \
+	ppc64le) echo "PowerPC;NVPTX";; \
+esac)
+
+# LLVM_ENABLE_CXX11: Make sure everything compiles using C++11
+# LLVM_ENABLE_EH: required for throwing exceptions
+# LLVM_ENABLE_RTTI: required for dynamic_cast
+# LLVM_REQUIRE_RTTI: required for dynamic_cast
+do-conf-llvm: .llvm.checkout_done
+	[ -d ${BUILD_DIR}/llvm ] || mkdir -p ${BUILD_DIR}/llvm
+	cd ${BUILD_DIR}/llvm && $(CMAKE) ${BSD_DIR}/llvm \
+		-DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
+		-DCMAKE_BUILD_TYPE=RelWithDebInfo \
+		-DLLVM_ENABLE_ASSERTIONS=ON \
+		-DLLVM_ENABLE_PIC=ON \
+		-DLLVM_ENABLE_EH=ON \
+		-DLLVM_ENABLE_RTTI=ON \
+		-DLLVM_REQUIRES_RTTI=ON \
+		-DBUILD_SHARED_LIBS=ON \
+		-DLLVM_USE_INTEL_JITEVENTS:BOOL=ON \
+		-DLLVM_TARGETS_TO_BUILD="${LLVM_TARGETS_TO_BUILD}" \
+		-Wno-dev
+
+#######################################################################
+# Checkout sources as needed
+#######################################################################
+
+.PRECIOUS: ${BSD_DIR}/clang
+.PRECIOUS: ${BSD_DIR}/compiler-rt
+.PRECIOUS: ${BSD_DIR}/libcxx
+.PRECIOUS: ${BSD_DIR}/libcxxabi
+.PRECIOUS: ${BSD_DIR}/libunwind
+.PRECIOUS: ${BSD_DIR}/llvm
+
+do-checkout-llvm:
+	# No way of adding from a top level submodules within sub-
+	# modules, so stickying to this method.
+	git submodule update ${SHALLOW_LLVM_SUBMODULES} --init --recursive \
+		${BSD_DIR}/llvm \
+		${BSD_DIR}/clang \
+		${BSD_DIR}/compiler-rt \
+		${BSD_DIR}/libcxx \
+		${BSD_DIR}/libcxxabi \
+		${BSD_DIR}/libunwind \
+		${BSD_DIR}/clang-tools-extra
+	ln -sf ../../clang ${BSD_DIR}/llvm/tools/clang
+	ln -sf ../../compiler-rt ${BSD_DIR}/llvm/projects/compiler-rt
+	ln -sf ../../libcxx ${BSD_DIR}/llvm/projects/libcxx
+	ln -sf ../../libcxxabi ${BSD_DIR}/llvm/projects/libcxxabi
+	ln -sf ../../libunwind ${BSD_DIR}/llvm/projects/libunwind
+	[ -d ${BSD_DIR}/llvm/tools/clang/tools ] || mkdir -p ${BSD_DIR}/llvm/tools/clang/tools
+	ln -sf ../../clang-tools-extra ${BSD_DIR}/llvm/tools/clang/tools/extra
+	# Optional.h from LLVM 7.0 had some transformations that seem to confuse
+	# GCC, causing problems linking gcc-generated LLVM libraries to
+	# clang-generated code
+	cd ${BSD_DIR}/llvm && git apply ${PROJECT_DIR}/patches/0001-llvm-optional.h.patch
+	# BasicBlock.h header contains ">>>" which is causing problems when
+	# compiling for CUDA, as it confuses clang to believe it is part of
+	# a kernel launch
+	cd ${BSD_DIR}/llvm && git apply ${PROJECT_DIR}/patches/0002-llvm.patch
+
+#######################################################################
+# Clean targets
+#######################################################################
+
+#######################################################################
+# Makefile utils / Generic targets
+#######################################################################
+ifeq (${VERBOSE},0)
+# Do not echo the commands before executing them.
+.SILENT:
+endif
+
+.PHONY: help
+help:
+	@echo "-----------------------------------------------------------------------"
+	@echo "The general commands are available:"
+	@echo " * show-config		Display configuration variables such as paths,"
+	@echo " 			number of jobs and other tunable options."
+	@echo " * clean 		Remove trireme object files and binaries."
+	@echo " * dist-clean		Cleans the repository to a pristine state,"
+	@echo " 			just like after a new clone of the sources."
+	@echo "-----------------------------------------------------------------------"
+	@echo " In the following targets, '%' can be replaced by one of the external"
+	@echo " project among the following list:"
+	@echo ""
+	@echo "  ${PROJECTS}"
+	@echo ""
+	@echo " * dist-clean-%		Removes everything from project '%', forcing a"
+	@echo " 			build from scratch of '%'."
+	@echo " * clean-%		Removes the object files of '%'"
+	@echo " * install-%		Install '%' in INSTALL_DIR"
+	@echo " * build-%		Build '%' in BUILD_DIR"
+	@echo " * configure-%		Configure '%'"
+	@echo " * checkout-%		Checkout the sources of '%'"
+	@echo "-----------------------------------------------------------------------"
+
+.PHONY: show-config
+show-config:
+	@echo "-----------------------------------------------------------------------"
+	@echo "Configuration:"
+	@echo "-----------------------------------------------------------------------"
+	@echo "PROJECT_DIR		:= ${PROJECT_DIR}"
+	@echo "SRC_DIR			:= ${SRC_DIR}"
+	@echo "EXTERNAL_DIR		:= ${EXTERNAL_DIR}"
+	@echo "BSD_DIR			:= ${BSD_DIR}"
+	@echo "MIT_DIR			:= ${MIT_DIR}"
+	@echo "BUILD_DIR		:= ${BUILD_DIR}"
+	@echo "INSTALL_DIR		:= ${INSTALL_DIR}"
+	@echo "JOBS			:= ${JOBS}"
+	@echo "USER			:= ${USER}"
+	@echo "VERBOSE			:= ${VERBOSE}"
+	@echo "-----------------------------------------------------------------------"
+
+.PHONY: dist-clean
+dist-clean:
+	@echo "-----------------------------------------------------------------------"
+	@echo "-- dist-clean..."
+	-rm -rf ${EXTERNAL_DIR}
+	-git clean -dxf .
+	@echo "-- dist-clean done."
+
+%: .%.install_done
+
+.PHONY: install-%
+install-%:
+	-rm -f .$$(echo $@ | sed -e 's,install-,,').install_done
+	make   .$$(echo $@ | sed -e 's,install-,,').install_done
+
+.PHONY: build-%
+build-%:
+	-rm -f .$$(echo $@ | sed -e 's,build-,,').build_done
+	make   .$$(echo $@ | sed -e 's,build-,,').build_done
+
+.PHONY: configure-%
+configure-%:
+	-rm -f .$$(echo $@ | sed -e 's,configure-,,').configure_done
+	make   .$$(echo $@ | sed -e 's,configure-,,').configure_done
+
+.PHONY: checkout-%
+checkout-%:
+	-rm -f .$$(echo $@ | sed -e 's,checkout-,,').checkout_done
+	make   .$$(echo $@ | sed -e 's,checkout-,,').checkout_done
+
+.PHONY: dist-clean-%
+dist-clean-%: clean-%
+	@echo "-----------------------------------------------------------------------"
+	@echo "-- $$(echo $@ | sed -e 's,^dist-clean-,,') dist-clean..."
+	-rm -rf  ${EXTERNAL_DIR}/*/$$(echo $@ | sed -e 's,dist-clean-,,')
+	@echo "-- $$(echo $@ | sed -e 's,^dist-clean-,,') dist-clean done."
+
+.PHONY: clean-%
+clean-%:
+	@echo "-----------------------------------------------------------------------"
+	@echo "-- $$(echo $@ | sed -e 's,^clean-,,') clean..."
+	-rm .$$(echo $@ | sed -e 's,clean-,,').*_done
+	-rm -rf  ${BUILD_DIR}/$$(echo $@ | sed -e 's,clean-,,')
+	@echo "-- $$(echo $@ | sed -e 's,^clean-,,') clean done."
+
+.PHONY: do-install-%
+do-install-%: .%.build_done
+	[ -d ${INSTALL_DIR} ] || mkdir -p ${INSTALL_DIR}
+	cd ${BUILD_DIR}/$$(echo $@ | sed -e 's,do-install-,,') && \
+		make -j ${JOBS} install
+
+.PHONY: do-build-%
+do-build-%: .%.configure_done
+	[ -d ${BUILD_DIR} ] || mkdir -p ${BUILD_DIR}
+	cd ${BUILD_DIR}/$$(echo $@ | sed -e 's,do-build-,,') && \
+		make -j ${JOBS}
+
+.PHONY: do-conf-%
+
+.PHONY: do-checkout-%
+do-checkout-%:
+	git submodule update --init --recursive \
+		$$(git submodule status | grep $$(echo $@ | sed -e 's,do-checkout-,,') | cut -d ' ' -f 3)
+
+.PRECIOUS: .%.install_done
+.%.install_done: .%.build_done
+	@echo "-----------------------------------------------------------------------"
+	@echo "-- $$(echo $@ | sed -e 's,^[.],,' -e 's,_done,,')..."
+	make do-install-$$(echo $@ | sed -e 's,^[.],,' -e 's,.install_done,,')
+	@echo "-- $$(echo $@ | sed -e 's,^[.],,' -e 's,_done,,') done."
+	touch $@
+
+.PRECIOUS: .%.build_done
+.%.build_done: .%.configure_done
+	@echo "-----------------------------------------------------------------------"
+	@echo "-- $$(echo $@ | sed -e 's,^[.],,' -e 's,_done,,')..."
+	make do-build-$$(echo $@ | sed -e 's,^[.],,' -e 's,.build_done,,')
+	@echo "-- $$(echo $@ | sed -e 's,^[.],,' -e 's,_done,,') done."
+	touch $@
+
+.PRECIOUS: .%.configure_done
+.%.configure_done: .%.checkout_done
+	@echo "-----------------------------------------------------------------------"
+	@echo "-- $$(echo $@ | sed -e 's,^[.],,' -e 's,_done,,')..."
+	make do-conf-$$(echo $@ | sed -e 's,^[.],,' -e 's,.configure_done,,')
+	@echo "-- $$(echo $@ | sed -e 's,^[.],,' -e 's,_done,,') done."
+	touch $@
+
+.PRECIOUS: .%.checkout_done
+.%.checkout_done:
+	@echo "-----------------------------------------------------------------------"
+	@echo "-- $$(echo $@ | sed -e 's,^[.],,' -e 's,_done,,')..."
+	make do-checkout-$$(echo $@ | sed -e 's,^[.],,' -e 's,.checkout_done,,')
+	@echo "-- $$(echo $@ | sed -e 's,^[.],,' -e 's,_done,,') done."
+	touch $@

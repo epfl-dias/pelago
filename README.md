@@ -38,21 +38,21 @@ For SBT:
 
 ## Building the project
 
-To build the project, call `make`. Everything will be downloaded, configured, built and installed automatically.
+To build the project, call `make`. Everything will be downloaded, configured,
+built and installed automatically.
 
-In order to speed up the development cycles each steps is marked as done by creating a hidden empty file in the root directory. To retrigger a step, and all the following ones use a simple:
+In order to speed up the development cycles each steps is marked as done by
+creating a hidden empty file in the root directory. To retrigger a step, and
+all the following ones use a simple:
 
 ```sh
     $ touch .<project>.<step>_done
 ```
 
-To rebuild a specific external target, you can use:
+You can retrigger any step among (checkout, configure, build, install) manually.
+Please refer to `make help` for more details.
 
-```sh
-    $ make clean-$(target)
-```
-
-The build will be exectude using several default values, which can be
+The build will be executed using several default values, which can be
 changed by specifying them in one of the following ways:
 
  * $ export VAR=value
