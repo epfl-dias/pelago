@@ -5,11 +5,20 @@
  * Ubuntu 16.04 LTS
  * CMake 3
  * GNU Make
- * git (to checkout this project and dependencies)
+ * Git (to checkout this project and dependencies)
  * C++ compiler & tools to bootstrap LLVM
+
+For raw-jit-executor:
+ * libnuma1
+ * libnuma-dev
+
+For Panorama, sqlplanner & planner:
  * scala & sbt
- * And any other packages listed in `requirements.txt`
-    * Under Ubuntu you can install them using: `apt install $(cat requirements.txt)`
+ * npm
+
+For Google Tests:
+ * autoconf
+ * libtool
 
 ## Online help
 
