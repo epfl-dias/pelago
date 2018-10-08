@@ -89,12 +89,16 @@ To see the variables and their current values:
     ├── Makefile
     ├── README.md
     └── src
-        └── coordinator
+        ├── coordinator
+        │   └── translator_scripts
+        └── docker
+            └── pelago-build
 ```
 
 ### After a successfull build of the project
 
-Using the default settings, the following folder hierarchy will be created:
+Using the default settings, here is a summary of the folder hierarchy which
+will be created:
 ```shell
     .
     ├── build
@@ -106,6 +110,7 @@ Using the default settings, the following folder hierarchy will be created:
     ├── external
     │   ├── bsd
     │   │   ├── clang
+    │   │   ├── clang-tools-extra
     │   │   ├── compiler-rt
     │   │   ├── glog
     │   │   ├── gtest
@@ -122,9 +127,14 @@ Using the default settings, the following folder hierarchy will be created:
     │   ├── libexec
     │   ├── raw
     │   └── share
+    ├── patches
     └── src
         ├── coordinator
+        │   └── translator_scripts
+        ├── docker
+        │   └── pelago-build
         ├── panorama
         ├── planner
-        └── raw-jit-executor
+        ├── raw-jit-executor
+        └── SQLPlanner
 ```
