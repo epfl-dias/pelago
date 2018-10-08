@@ -12,6 +12,13 @@ BUILD_DIR	?= ${PROJECT_DIR}/build
 
 CMAKE		?= cmake
 
+# If clang is found, we prefer it.
+ifeq ($(shell if command -v clang 1> /dev/null; then echo clang; else echo ""; fi),clang)
+CC		:= clang
+CXX		:= clang++
+CPP		:= "clang -E"
+endif
+
 COMMON_ENV := \
  PATH=${INSTALL_DIR}/bin:${PATH} \
  CC=${INSTALL_DIR}/bin/clang \
