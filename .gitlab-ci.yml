@@ -2,11 +2,11 @@
 # gitlab-runner:docker executor options
 image: chapeiro/pelago-build:latest
 # - Add support for docker-in-docker tests / build processes
- 
+
 #############################################################################
 variables:
-  GIT_SUBMODULE_STRATEGY: recursive
-  GIT_DEPTH: "1"
+ GIT_SUBMODULE_STRATEGY: recursive
+ GIT_DEPTH: "1"
 
 #############################################################################
 stages:
@@ -32,44 +32,54 @@ stages:
  - Publish              # Publish the packages
 
  - Build Profile        # Build the project with profiling information
- 
+
  - Profile              # Profile using known workload
 
 #############################################################################
 # Helper Templates
 
+before_script:
+ - cache_path=$(pwd | sed "s/^\/builds/\/cache/g")/${CI_COMMIT_REF_SLUG}-${CI_COMMIT_SHA}
+ - mkdir -p ${cache_path}/build ${cache_path}/opt
+ - ln -s ${cache_path}/build build
+ - ln -s ${cache_path}/opt opt
+ - cp -p -t . ${cache_path}/.*done || true
+ # TODO: we should probably remove the next line and fix that in raw-jit-executor
+ - ln -s /data/ssbm100 src/raw-jit-executor/inputs/ssbm100
+
+after_script:
+ # we have to recalculate cache_path here
+ - cache_path=$(pwd | sed "s/^\/builds/\/cache/g")/${CI_COMMIT_REF_SLUG}-${CI_COMMIT_SHA}
+ - cp -p -t ${cache_path} .*done || true
 
 #----------------------------------------------------------------------------
 # Caching policies templates
+
+# As we keep the build & install marker files, we need to make sure the
+# corresponding binaries are kept as well. While this works for all the C/C++
+# projects as we build them outside of the sources, SBT does assume its own
+# folder layout, which starts in src/<projetc>. Thus we need to keep a cache
+# of the src folder as well.
+# FIXME: Can we configure SBT to store the generated files under build?
+# FIXME: Can we configure SBT to install the generated JAR under opt?
+# FIXME: What about npm?
 .cache: &cache
  tags:
   - pelago
- # cache:
- #  key: "${CI_COMMIT_REF_SLUG}"
- #  paths:
- #    - build/
- #    - opt/
- #    - .*done
- before_script:
-  - cache_path=$(pwd | sed "s/^\/builds/\/cache/g")/${CI_COMMIT_REF_SLUG}-${CI_COMMIT_SHA}
-  - mkdir -p ${cache_path}/build ${cache_path}/opt 
-  - ln -s ${cache_path}/build build
-  - ln -s ${cache_path}/opt opt
-  - cp -p -t . ${cache_path}/.*done || true
-  # TODO: we should probably remove the next line and fix that in raw-jit-executor
-  - ln -s /data/ssbm100 src/raw-jit-executor/inputs/ssbm100
- after_script:
-  # we have to recalculate cache_path here
-  - cache_path=$(pwd | sed "s/^\/builds/\/cache/g")/${CI_COMMIT_REF_SLUG}-${CI_COMMIT_SHA}
-  - cp -p -t ${cache_path} .*done || true
+ cache:
+  key: "${CI_COMMIT_REF_SLUG}-${CI_COMMIT_SHA}"
+  paths:
+   - src/panorama
+   - src/planner
+   - src/SQLPlanner
 
 .cache: &cache_profile
  cache:
   key: "${CI_COMMIT_REF_SLUG}-${CI_COMMIT_SHA}-profile"
   paths:
-    - build/
-    - opt/
-    - .*done
+   - src/panorama
+   - src/planner
+   - src/SQLPlanner
 
 #----------------------------------------------------------------------------
 # Execution restrictions templates
@@ -92,8 +102,6 @@ stages:
 .restrict_release: &restrict_release
  only:
   - tags
-
-
 
 #----------------------------------------------------------------------------
 # Job templates
