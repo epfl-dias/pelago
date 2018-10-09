@@ -6,6 +6,7 @@ image: chapeiro/pelago-build:latest
 #############################################################################
 variables:
   GIT_SUBMODULE_STRATEGY: recursive
+  GIT_DEPTH: "1"
 
 #############################################################################
 stages:
