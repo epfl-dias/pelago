@@ -177,57 +177,64 @@ build:
 
 #----------------------------------------------------------------------------
 # Functional Tests
-1/8 test - Threads:
+1/9 test - Threads:
  <<: *test
  script:
   - make &> check_installed.txt || (tail -c 512k check_installed.txt && exit 1) # make sure that everything is compiled
   - cd opt/raw && ./unit-tests-threads &> thread_test_log.txt || (tail -c 512k thread_test_log.txt && exit 1)
 
-2/8 test - Plan Parsing:
+2/9 test - Plan Parsing:
  <<: *test
  script:
   - make &> check_installed.txt || (tail -c 512k check_installed.txt && exit 1) # make sure that everything is compiled
   - cd opt/raw && ./unit-tests-plan-parsing &> plan_parsing_test_log.txt || (tail -c 512k plan_parsing_test_log.txt && exit 1)
  allow_failure: true
 
-3/8 test - JSON:
+3/9 test - JSON:
  <<: *test
  script:
   - make &> check_installed.txt || (tail -c 512k check_installed.txt && exit 1) # make sure that everything is compiled
   - cd opt/raw && ./unit-tests-json &> json_test_log.txt || (tail -c 512k json_test_log.txt && exit 1)
  allow_failure: true
 
-4/8 test - Joins:
+4/9 test - Joins:
  <<: *test
  script:
   - make &> check_installed.txt || (tail -c 512k check_installed.txt && exit 1) # make sure that everything is compiled
   - cd opt/raw && ./unit-tests-joins &> joins_test_log.txt || (tail -c 512k joins_test_log.txt && exit 1)
  allow_failure: true
 
-5/8 test - Output:
+5/9 test - Output:
  <<: *test
  script:
   - make &> check_installed.txt || (tail -c 512k check_installed.txt && exit 1) # make sure that everything is compiled
   - cd opt/raw && ./unit-tests-output &> output_test_log.txt || (tail -c 512k output_test_log.txt && exit 1)
  allow_failure: true
 
-6/8 test - GPU SSB SF100:
+6/9 test - GPU SSB SF100:
  <<: *test
  script:
   - make &> check_installed.txt || (tail -c 512k check_installed.txt && exit 1) # make sure that everything is compiled
   - cd opt/raw && ./unit-tests-gpu-ssb &> gpu_ssb_test_log.txt || (tail -c 512k gpu_ssb_test_log.txt && exit 1)
 
-7/8 test - CPU SSB SF100:
+7/9 test - CPU SSB SF100:
  <<: *test
  script:
   - make &> check_installed.txt || (tail -c 512k check_installed.txt && exit 1) # make sure that everything is compiled
   - cd opt/raw && ./unit-tests-cpu-ssb &> cpu_ssb_test_log.txt || (tail -c 512k cpu_ssb_test_log.txt && exit 1)
 
-8/8 test - Hybrid SSB SF100:
+8/9 test - Hybrid SSB SF100:
  <<: *test
  script:
   - make &> check_installed.txt || (tail -c 512k check_installed.txt && exit 1) # make sure that everything is compiled
   - cd opt/raw && ./unit-tests-hyb-ssb &> hyb_ssb_test_log.txt || (tail -c 512k hyb_ssb_test_log.txt && exit 1)
+
+9/9 test - Planner:
+ <<: *test
+ script:
+  - make &> check_installed.txt || (tail -c 512k check_installed.txt && exit 1) # make sure that everything is compiled
+  - cd src/planner && sbt test &> planner_test_log.txt || (tail -c 512k planner_test_log.txt && exit 1)
+
 
 #----------------------------------------------------------------------------
 # Performance Tests
