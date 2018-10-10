@@ -8,4 +8,8 @@ ssh
 doxygen
 autoconf
 libtool
+sbt
+python
+python-pip
+openjdk-11-jre-headless
 sqlline
