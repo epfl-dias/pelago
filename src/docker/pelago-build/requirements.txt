@@ -8,3 +8,4 @@ ssh
 doxygen
 autoconf
 libtool
+sqlline
