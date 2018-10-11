@@ -7,6 +7,7 @@
  * GNU Make
  * Git (to checkout this project and dependencies)
  * C++ compiler & tools to bootstrap LLVM
+ * sqlline (for the interactive client)
 
 For raw-jit-executor:
  * libnuma1
@@ -50,13 +51,12 @@ For SBT:
 To build the project, call `make`. Everything will be downloaded, configured,
 built and installed automatically.
 
-In order to speed up the development cycles each steps is marked as done by
-creating a hidden empty file in the root directory. To retrigger a step, and
-all the following ones use a simple:
+You can start the system with 2 terminals: 
+ 1. `make run-server` in the first terminal 
+ 2. `make run-client` in the second terminal
 
-```sh
-    $ touch .<project>.<step>_done
-```
+In order to speed up the development cycles each steps is marked as done by
+creating a hidden empty file in the root directory: `.<project>.<step>_done`.
 
 You can retrigger any step among (checkout, configure, build, install) manually.
 Please refer to `make help` for more details.
@@ -64,10 +64,9 @@ Please refer to `make help` for more details.
 The build will be executed using several default values, which can be
 changed by specifying them in one of the following ways:
 
- * $ export VAR=value
-   $ make
- * $ VAR=value make
- * $ make VAR=value
+ * `export VAR=value; make`
+ * `VAR=value make`
+ * `make VAR=value`
 
 To see the variables and their current values:
 ```sh
@@ -88,6 +87,7 @@ To see the variables and their current values:
     .
     ├── Makefile
     ├── README.md
+    ├── patches
     └── src
         ├── coordinator
         │   └── translator_scripts
