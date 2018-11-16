@@ -245,7 +245,7 @@ bench:
   - ln -s /data/credentials/logger_cred.json
   - pip install --user --upgrade --requirement src/coordinator/requirements.txt
   - make &> check_installed.txt || (cat check_installed.txt && exit 1) # make sure that everything is compiled
-  - python src/coordinator/coordinator.py --gspreadsheetId=1epbgvtEjiog41UWNX5RCfBgu4JcU4xdxuRNdQd0A1E0 --sheetName=diascld37 --commitLabel=${CI_COMMIT_SHA} --commitTime="$(TZ=UTC git show -s --format=%cd --date="format-local:%Y-%m-%dT%H:%M:%S%z")" --q0FromSheet < input_d100.sql &> bench_log.txt || (tail -c 512k bench_log.txt && exit 1)
+  - python src/coordinator/coordinator.py --gspreadsheetId=1epbgvtEjiog41UWNX5RCfBgu4JcU4xdxuRNdQd0A1E0 --sheetName=`echo ${CI_RUNNER_TAGS} | grep -o 'diascld[0-9]*'` --commitLabel=${CI_COMMIT_SHA} --commitTime="$(TZ=UTC git show -s --format=%cd --date="format-local:%Y-%m-%dT%H:%M:%S%z")" --q0FromSheet < input_d100.sql &> bench_log.txt || (tail -c 512k bench_log.txt && exit 1)
   - echo "Bench... done"
  <<: *cache
  <<: *restrict_precommit
