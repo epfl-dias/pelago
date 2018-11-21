@@ -82,7 +82,7 @@ glog: llvm .glog.install_done
 #######################################################################
 
 do-install-gtest: .gtest.build_done
-	cd ${BUILD_DIR}/gtest/googlemock/gtest && \
+	cd ${BUILD_DIR}/gtest/lib && \
 		cp *.a ${INSTALL_DIR}/lib && \
 		cp -r ${BUILD_DIR}/gtest/googletest/include/gtest \
 			${BUILD_DIR}/gtest/googlemock/include/gmock \
