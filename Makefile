@@ -16,7 +16,9 @@ CMAKE		?= cmake
 ifeq ($(shell if command -v clang 1> /dev/null; then echo clang; else echo ""; fi),clang)
 CC		:= clang
 CXX		:= clang++
-CPP		:= "clang -E"
+CPP		:= 'clang -E'
+
+export CC CPP CXX
 endif
 
 COMMON_ENV := \
