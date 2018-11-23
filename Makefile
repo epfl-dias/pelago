@@ -101,7 +101,7 @@ do-conf-glog: glog.checkout_done llvm
 	cd ${BUILD_DIR}/glog && autoreconf -fi .
 	cd ${BUILD_DIR}/glog && \
 		${COMMON_ENV} \
-		./configure --prefix ${INSTALL_DIR}
+		ac_cv_have_libgflags=no ac_cv_lib_gflags_main=no ./configure --prefix ${INSTALL_DIR}
 
 do-conf-postgres: postgres.checkout_done llvm
 	[ -d ${BUILD_DIR}/postgres ] || mkdir -p ${BUILD_DIR}/postgres
