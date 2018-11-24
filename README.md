@@ -49,7 +49,7 @@ To see the variables and their current values:
     ├── README.md
     └── src
         ├── postgres
-        └── raw-jit-executor
+        └── proteus
     
     3 directories, 2 files
 ```
@@ -67,12 +67,12 @@ Using the default settings, the following folder hierarchy will be created:
     │   ├── llvm
     │   ├── postgres
     │   ├── rapidjson
-    │   └── raw-jit-executor
+    │   └── proteus
     ├── opt
     │   ├── bin
     │   ├── include
     │   ├── lib
-    │   ├── raw-jit-executor -> /localhome/sambuc/Projects/pelaGo/build/raw-jit-executor
+    │   ├── raw     <-- proteus
     │   └── share
     └── src
         ├── glog
@@ -80,7 +80,7 @@ Using the default settings, the following folder hierarchy will be created:
         ├── llvm
         ├── postgres
         ├── rapidjson
-        └── raw-jit-executor
+        └── proteus
     
     20 directories
 ```

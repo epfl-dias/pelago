@@ -8,8 +8,8 @@ BUILD_DIR	?= ${PELAGOS_DIR}/build
 
 JOBS		?= $$(( $$(grep processor /proc/cpuinfo|tail -1|cut -d: -f2) + 1))
 
-RAW_CHECKOUT   ?= "git clone git@gitlab.epfl.ch:DIAS/PROJECTS/caldera/raw-jit-executor.git"
-RAW_REVISION   ?= "-b 1.0"
+RAW_CHECKOUT   ?= "git clone https://github.com/epfl-dias/proteus"
+RAW_REVISION   ?= "-b v1.0"
 
 RAPIDJSON_CHECKOUT ?= "git clone https://github.com/miloyip/rapidjson"
 RAPIDJSON_REVISION ?= "-b v1.1.0"
@@ -26,7 +26,7 @@ POSTGRES_REVISION ?= ""
 LLVM_CHECKOUT	?= "svn co http://llvm.org/svn/llvm-project"
 LLVM_REVISION	?= "tags/RELEASE_391/final"
 
-all: postgres raw-jit-executor
+all: postgres proteus
 	@make --no-print-directory show-config
 
 #######################################################################
@@ -34,11 +34,11 @@ all: postgres raw-jit-executor
 # calling it.
 #######################################################################
 
-.PHONY: raw-jit-executor
-raw-jit-executor: raw-jit-executor.install_done
+.PHONY: proteus
+proteus: proteus.install_done
 	# This is the main tree, so do not shortcut it
-	rm raw-jit-executor.install_done
-	rm raw-jit-executor.build_done
+	rm proteus.install_done
+	rm proteus.build_done
 
 .PHONY: postgres
 postgres: postgres.install_done
@@ -69,7 +69,7 @@ do-install-gtest: gtest.build_done
 #######################################################################
 # Build targets
 #######################################################################
-do-build-raw-jit-executor: glog gtest rapidjson
+do-build-proteus: glog gtest rapidjson
 
 do-build-llvm: llvm.configure_done
 	cd ${BUILD_DIR}/llvm && \
@@ -109,11 +109,11 @@ do-conf-postgres: postgres.checkout_done llvm
 		${COMMON_ENV} \
 		${SRC_DIR}/postgres/configure --prefix ${INSTALL_DIR}
 
-do-conf-raw-jit-executor: raw-jit-executor.checkout_done rapidjson glog gtest llvm
-	[ -d ${BUILD_DIR}/raw-jit-executor ] || mkdir -p ${BUILD_DIR}/raw-jit-executor
-	cd ${BUILD_DIR}/raw-jit-executor && \
+do-conf-proteus: proteus.checkout_done rapidjson glog gtest llvm
+	[ -d ${BUILD_DIR}/proteus ] || mkdir -p ${BUILD_DIR}/proteus
+	cd ${BUILD_DIR}/proteus && \
 		${COMMON_ENV} \
-		cmake ${SRC_DIR}/raw-jit-executor \
+		cmake ${SRC_DIR}/proteus \
 			-DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
 
 do-conf-rapidjson: rapidjson.checkout_done llvm
@@ -145,9 +145,9 @@ do-conf-llvm: llvm.checkout_done
 #######################################################################
 # Checkout sources as needed
 #######################################################################
-.PRECIOUS: src/raw-jit-executor
-src/raw-jit-executor:
-	eval ${RAW_CHECKOUT} ${RAW_REVISION} src/raw-jit-executor
+.PRECIOUS: src/proteus
+src/proteus:
+	eval ${RAW_CHECKOUT} ${RAW_REVISION} src/proteus
 
 .PRECIOUS: src/rapidjson
 src/rapidjson:
