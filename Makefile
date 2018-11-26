@@ -12,7 +12,7 @@ BUILD_DIR	?= ${PROJECT_DIR}/build
 
 CMAKE		?= cmake
 
-# If clang is found, we prefer it.
+# If clang is found, we prefer it, to build our own clang.
 ifeq ($(shell if command -v clang 1> /dev/null; then echo clang; else echo ""; fi),clang)
 CC		:= clang
 CXX		:= clang++
@@ -20,12 +20,6 @@ CPP		:= 'clang -E'
 
 export CC CPP CXX
 endif
-
-COMMON_ENV := \
- PATH=${INSTALL_DIR}/bin:${PATH} \
- CC=${INSTALL_DIR}/bin/clang \
- CXX=${INSTALL_DIR}/bin/clang++ \
- CPP=${INSTALL_DIR}/bin/clang\ -E
 
 # List of all the projects / repositories
 PROJECTS:= llvm glog gtest rapidjson raw-jit-executor avatica planner SQLPlanner
