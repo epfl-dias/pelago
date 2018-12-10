@@ -3,10 +3,8 @@
 ## Requirements
 
  * Ubuntu 16.04 LTS
- * CMake 3
  * GNU Make
  * Git (to checkout this project and dependencies)
- * C++ compiler & tools to bootstrap LLVM
  * sqlline (for the interactive client)
 
 For raw-jit-executor:
@@ -20,6 +18,11 @@ For Panorama, sqlplanner & planner:
 For Google Tests:
  * autoconf
  * libtool
+
+For LLVM:
+ * CMake 3
+ * C++ compiler & tools to bootstrap LLVM
+ * libxml2
 
 ## Online help
 

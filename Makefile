@@ -143,14 +143,15 @@ do-conf-raw-jit-executor: .raw-jit-executor.checkout_done external-libs
 		$(CMAKE) ${SRC_DIR}/raw-jit-executor \
 			-DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
 
-# RapidJSON is a head-only library, but it will try to build documentation and
-# unit-tests unless explicitly told not to do so.
+# RapidJSON is a head-only library, but it will try to build documentation,
+# examples and unit-tests unless explicitly told not to do so.
 do-conf-rapidjson: .rapidjson.checkout_done llvm
 	[ -d ${BUILD_DIR}/rapidjson ] || mkdir -p ${BUILD_DIR}/rapidjson
 	cd ${BUILD_DIR}/rapidjson && \
 		${COMMON_ENV} \
 		$(CMAKE) ${MIT_DIR}/rapidjson/ \
 			-DRAPIDJSON_BUILD_DOC=OFF \
+			-DRAPIDJSON_BUILD_EXAMPLES=OFF \
 			-DRAPIDJSON_BUILD_TESTS=OFF \
 			-DCMAKE_INSTALL_PREFIX=${INSTALL_DIR}
 
