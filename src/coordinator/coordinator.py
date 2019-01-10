@@ -306,7 +306,7 @@ class Planner(ProcessObj):
     def __init__(self, args):
         ProcessObj.__init__(self)
         wd = os.path.join(os.path.dirname(__file__), r"../SQLPlanner")
-        schema = os.path.abspath(os.path.join(os.path.dirname(__file__), r"../../opt/raw/inputs/plans/schema.json"))
+        schema = os.path.abspath(os.path.join(os.path.dirname(__file__), r"../../src/SQLPlanner/src/main/resources/schema.json"))
         cmd = ["java", "-jar", "target/scala-2.12/SQLPlanner-assembly-0.1.jar", schema]
         self.p = Popen(cmd, stdin=PIPE, stdout=PIPE, cwd=wd)
         self.name = "planner"
