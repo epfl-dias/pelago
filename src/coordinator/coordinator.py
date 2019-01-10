@@ -62,6 +62,9 @@ parser.add_argument('--commitTime',
                     help="commit time",
                     default=datetime.datetime.now(tzlocal()).strftime(datetime_format),
                     type=str)
+parser.add_argument('--failOnParseError',
+                    action="store_true",
+                    help="Throw an exception and exit with an error code upon SQL parsing error")
 
 args            = parser.parse_args()
 spreadsheetId   = args.gspreadsheetId
@@ -422,7 +425,10 @@ if __name__ == "__main__":
                                 plan = planner.get_plan_from_sql(sql_query)
                             except SQLParseError as e:
                                 print("error (" + e.details + ")")
-                                continue
+                                if args.failOnParseError:
+                                    raise
+                                else:
+                                    continue
                             t1 = time.time()
                             if create_test is None or gentests_exec:
                                 (wplan_ms, wexec_ms,
