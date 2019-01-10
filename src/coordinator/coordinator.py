@@ -238,9 +238,9 @@ class Executor(ProcessObj):
         if (to_load != self.loaded):
             self.p.stdin.write("unloadall\n")
             self.wait_for(lambda x: x.startswith("done"))
-            for file in to_load:
-                self.p.stdin.write("load cpus " + file + "\n")
-                self.wait_for(lambda x: x.startswith("done"))
+            # for file in to_load:
+            #     self.p.stdin.write("load cpus " + file + "\n")
+            #     self.wait_for(lambda x: x.startswith("done"))
             self.loaded = to_load
         t0 = time.time()
         with open("plan.json", 'w') as fplan:
@@ -419,7 +419,7 @@ if __name__ == "__main__":
                                 print("error (text after query end)")
                             sql_query = sql_query[0]
                             readline.add_history(sql_query + ';')
-                        for rep in range(5):
+                        for rep in range(5+1):
                             t0 = time.time()
                             try:
                                 plan = planner.get_plan_from_sql(sql_query)
@@ -460,30 +460,31 @@ if __name__ == "__main__":
                                                 ident = ident + "_gpu" + str(num_of_gpus)
                                                 conf  = [0, num_of_gpus]
                                         label = label_test.replace('%', ident)
-                                    if not is_warmup:
+                                    if (not is_warmup) and rep > 0: # rep == 0 is used for warming up the storage manager
                                         sheets_append([total_ms, plan_ms, wplan_ms, wexec_ms, Tcodegen, Texec], label, sql_query, conf)
-                                    if timings_csv:
-                                        print('Timing,' + 
-                                              '%.2f,' % (total_ms) +
-                                              '%.2f,' % (plan_ms) +
-                                              '%.2f,' % (wplan_ms) +
-                                              '%.2f,' % (wexec_ms) +
-                                              '%.2f,' % (Tcodegen) +
-                                              '%.2f' % (Texec))
-                                    else:
-                                        print("Total time: " +
-                                              '%.2f' % (total_ms) +
-                                              "ms, Planning time: " +
-                                              '%.2f' % (plan_ms) +
-                                              "ms, Flush plan time: " +
-                                              '%.2f' % (wplan_ms) +
-                                              "ms, Total executor time: " +
-                                              '%.2f' % (wexec_ms) +
-                                              "ms, Codegen time: " +
-                                              '%.2f' % (Tcodegen) +
-                                              "ms, Execution time: " +
-                                              '%.2f' % (Texec) +
-                                              "ms")
+                                    if rep > 0:
+                                        if timings_csv:
+                                            print('Timing,' +
+                                                  '%.2f,' % (total_ms) +
+                                                  '%.2f,' % (plan_ms) +
+                                                  '%.2f,' % (wplan_ms) +
+                                                  '%.2f,' % (wexec_ms) +
+                                                  '%.2f,' % (Tcodegen) +
+                                                  '%.2f' % (Texec))
+                                        else:
+                                            print("Total time: " +
+                                                  '%.2f' % (total_ms) +
+                                                  "ms, Planning time: " +
+                                                  '%.2f' % (plan_ms) +
+                                                  "ms, Flush plan time: " +
+                                                  '%.2f' % (wplan_ms) +
+                                                  "ms, Total executor time: " +
+                                                  '%.2f' % (wexec_ms) +
+                                                  "ms, Codegen time: " +
+                                                  '%.2f' % (Tcodegen) +
+                                                  "ms, Execution time: " +
+                                                  '%.2f' % (Texec) +
+                                                  "ms")
                             if create_test is not None:
                                 ident = ""
                                 if '%' in create_test:
