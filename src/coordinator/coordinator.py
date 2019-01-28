@@ -133,7 +133,7 @@ def sheets_append(x, label, sql_query, conf):
     q_id = q_id + 1
     wsize = wsize + 1
     bench_date = r"""=DATEVALUE(LEFT(B_,10))+TIMEVALUE(MID(B_,12,8))-(IF(MID(B_,20,1) = "+",1,-1)*TIMEVALUE(MID(B_, 21, 2) & ":" & RIGHT(B_,2)))""".replace(r"""_""", str(q_id + 1))
-    values.append(['Timing', bench_time, commitTime, commitLabel, label, sql_query] + conf + x + ["=MATCH(P" + str(q_id + 1) + ",SORT(UNIQUE(P:P)),0)-1", r"""=TEXTJOIN(" ", false, Q""" + str(q_id + 1) + ", D" + str(q_id + 1) + ")", bench_date])
+    values.append(['Timing', bench_time, commitTime, commitLabel, label, sql_query] + conf + x + ["=MATCH(S" + str(q_id + 1) + ",SORT(UNIQUE(S:S)),0)-1", r"""=TEXTJOIN(" ", false, T""" + str(q_id + 1) + ", D" + str(q_id + 1) + ")", bench_date])
     
     if wsize < 50: return
     
