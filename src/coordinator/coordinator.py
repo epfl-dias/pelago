@@ -155,7 +155,7 @@ timings = False
 timings_csv = False
 q = Queue.Queue()
 
-kws = ["result in file ", "error", "ready", "T", "done"]
+kws = ["result in file ", "error", "ready", "T", "done", "Optimization", "raw_server"]
 
 explicit_memcpy = True
 parallel = True
@@ -251,16 +251,32 @@ class Executor(ProcessObj):
         self.p.stdin.write(cmd + '\n')
         Tcodegen = None
         Texec = None
+        Tdataload = 0
+        Tcodeopt = 0
+        Tcodeoptnload = 0
         while True:
             token = self.wait_for(lambda x:
                                   x.startswith("result in file ") or
                                   x.startswith("error") or
                                   x.startswith("Tcodegen: ") or
+                                  x.startswith("Optimization time: ") or
+                                  " C: " in x or
+                                  " G: " in x or
+                                  (x.startswith("Topen (") and ',' not in x) or
                                   x.startswith("Texecute w sync:") or
                                   x.startswith("Texecute:"))
             if token.startswith("Tcodegen: "):
                 Tcodegen = re.match(r'Tcodegen: *(\d+(.\d+)?)ms', token)
                 Tcodegen = float(Tcodegen.group(1))
+            elif token.startswith("Optimization time: "):
+                m = re.match(r'Optimization time: *(\d+(.\d+)?)ms', token)
+                Tcodeopt = Tcodeopt + float(m.group(1))
+            elif (" C: " in token or " G: " in token):
+                m = re.match(r'.* [CG]: *(\d+(.\d+)?)ms', token)
+                Tcodeoptnload = Tcodeoptnload + float(m.group(1))
+            elif (token.startswith("Topen (") and ',' not in x):
+                m = re.match(r'.*\): *(\d+(.\d+)?)ms', token)
+                Tdataload = Tdataload + float(m.group(1))
             elif token.startswith("Texecute"):
                 Texec = re.match(r'Texecute[^:]*: *(\d+(.\d+)?)ms', token)
                 Texec = float(Texec.group(1))
@@ -269,7 +285,7 @@ class Executor(ProcessObj):
                     conn.send((token+"\n").encode())
                 break
         t2 = time.time()
-        return ((t1 - t0) * 1000, (t2 - t1) * 1000, Tcodegen, Texec)
+        return ((t1 - t0) * 1000, (t2 - t1) * 1000, Tcodegen, Tdataload, Tcodeopt, Tcodeoptnload, Texec)
 
     def stop(self):
         ProcessObj.stop(self)
@@ -280,11 +296,11 @@ class Executor(ProcessObj):
         # self.t.join()
 
     def wait_for(self, f):
-        for kw in kws:
-            if f(kw):
-                break
-        else:
-            assert(False)
+        # for kw in kws:
+        #     if not f(kw):
+        #         assert(False)
+        # else:
+        #     break
         while not self.p.poll():
             try:
                 res = q.get(True, 0.01)
@@ -432,7 +448,11 @@ if __name__ == "__main__":
                             t1 = time.time()
                             if create_test is None or gentests_exec:
                                 (wplan_ms, wexec_ms,
-                                    Tcodegen, Texec) = executor.execute_plan(plan)
+                                    Tcodegen, 
+                                    Tdataload,
+                                    Tcodeopt,
+                                    Tcodeoptnload,
+                                    Texec) = executor.execute_plan(plan)
                                 if (timings):
                                     t2 = time.time()
                                     total_ms = (t2 - t0) * 1000
@@ -461,7 +481,7 @@ if __name__ == "__main__":
                                                 conf  = [0, num_of_gpus]
                                         label = label_test.replace('%', ident)
                                     if (not is_warmup) and rep > 0: # rep == 0 is used for warming up the storage manager
-                                        sheets_append([total_ms, plan_ms, wplan_ms, wexec_ms, Tcodegen, Texec], label, sql_query, conf)
+                                        sheets_append([total_ms, plan_ms, wplan_ms, wexec_ms, Tcodegen, Tdataload, Tcodeopt, Tcodeoptnload, Texec], label, sql_query, conf)
                                     if rep > 0:
                                         if timings_csv:
                                             print('Timing,' +
@@ -470,6 +490,9 @@ if __name__ == "__main__":
                                                   '%.2f,' % (wplan_ms) +
                                                   '%.2f,' % (wexec_ms) +
                                                   '%.2f,' % (Tcodegen) +
+                                                  '%.2f,' % (Tdataload) +
+                                                  '%.2f,' % (Tcodeopt) +
+                                                  '%.2f,' % (Tcodeoptnload) +
                                                   '%.2f' % (Texec))
                                         else:
                                             print("Total time: " +
@@ -482,6 +505,12 @@ if __name__ == "__main__":
                                                   '%.2f' % (wexec_ms) +
                                                   "ms, Codegen time: " +
                                                   '%.2f' % (Tcodegen) +
+                                                  "ms, Data Load time: " + 
+                                                  '%.2f' % (Tdataload) +
+                                                  "ms, Code opt time: " + 
+                                                  '%.2f' % (Tcodeopt) +
+                                                  "ms, Code opt'n'load time: " + 
+                                                  '%.2f' % (Tcodeoptnload) +
                                                   "ms, Execution time: " +
                                                   '%.2f' % (Texec) +
                                                   "ms")
