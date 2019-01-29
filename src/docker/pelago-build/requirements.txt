@@ -7,9 +7,15 @@ npm
 ssh
 doxygen
 autoconf
+automake
 libtool
 sbt
 python
 python-pip
+python-setuptools
 openjdk-11-jre-headless
+clang
+clang-format-7
+libxml2-dev
 sqlline
+curl

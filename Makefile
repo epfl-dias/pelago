@@ -91,7 +91,7 @@ do-install-planner: .planner.build_done
 do-install-avatica:
 	[ -d ${INSTALL_DIR}/lib ] || mkdir -p ${INSTALL_DIR}/lib
 	# Direct downloads will trip in no time blacklisting of servers.
-	cd ${INSTALL_DIR}/lib && wget http://central.maven.org/maven2/org/apache/calcite/avatica/avatica/1.12.0/avatica-1.12.0.jar
+	cd ${INSTALL_DIR}/lib && curl -O http://central.maven.org/maven2/org/apache/calcite/avatica/avatica/1.12.0/avatica-1.12.0.jar
 	#cp ${EXTERNAL_DIR}/avatica-1.12.0.jar ${INSTALL_DIR}/lib
 
 # As we just download the binary, there is no point in checking for all
@@ -153,6 +153,8 @@ do-conf-rapidjson: .rapidjson.checkout_done llvm
 			-DRAPIDJSON_BUILD_DOC=OFF \
 			-DRAPIDJSON_BUILD_EXAMPLES=OFF \
 			-DRAPIDJSON_BUILD_TESTS=OFF \
+			-DRAPIDJSON_BUILD_CXX11=ON \
+			-DRAPIDJSON_HAS_CXX11_RVALUE_REFS=ON \
 			-DCMAKE_INSTALL_PREFIX=${INSTALL_DIR}
 
 do-conf-SQLPlanner: .SQLPlanner.checkout_done
