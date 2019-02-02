@@ -31,7 +31,7 @@ all: llvm | .panorama.checkout_done executor planner SQLPlanner
 	@echo ""
 
 run-server: all
-	cd ${INSTALL_DIR}/raw && \
+	cd ${INSTALL_DIR}/pelago && \
 		java -jar ${INSTALL_DIR}/bin/SQLPlanner-*.jar \
 			--server inputs/plans/schema.json
 

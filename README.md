@@ -2,9 +2,12 @@
 
 ## Requirements
 
- * Ubuntu 16.04 LTS
+The list of Ubuntu 18.04 required packages is in src/docker/pelago-build/requirements.txt
+
+ * Ubuntu 18.04 LTS
  * GNU Make
  * Git (to checkout this project and dependencies)
+ * curl (to download avatica)
  * sqlline (for the interactive client)
 
 For raw-jit-executor:
@@ -14,15 +17,21 @@ For raw-jit-executor:
 For Panorama, sqlplanner & planner:
  * scala & sbt
  * npm
+ * openjdk-11-jre-headless
+
+For coordinator:
+ * python-pip
+ * python-setuptools
 
 For Google Tests:
  * autoconf
+ * automake
  * libtool
 
 For LLVM:
  * CMake 3
  * C++ compiler & tools to bootstrap LLVM
- * libxml2
+ * libxml2-dev
 
 ## Online help
 
@@ -109,7 +118,7 @@ will be created:
     │   ├── gtest
     │   ├── llvm
     │   ├── rapidjson
-    │   └── raw-jit-executor
+    │   └── executor
     ├── external
     │   ├── bsd
     │   │   ├── clang
@@ -128,7 +137,7 @@ will be created:
     │   ├── include
     │   ├── lib
     │   ├── libexec
-    │   ├── raw
+    │   ├── pelago
     │   └── share
     ├── patches
     └── src
@@ -136,8 +145,8 @@ will be created:
         │   └── translator_scripts
         ├── docker
         │   └── pelago-build
+        ├── executor
         ├── panorama
         ├── planner
-        ├── raw-jit-executor
         └── SQLPlanner
 ```

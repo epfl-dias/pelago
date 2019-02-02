@@ -149,7 +149,7 @@ addr = None
 planner = None
 executor = None
 
-history_file = os.path.expanduser(r"~/.rawdb-history")
+history_file = os.path.expanduser(r"~/.pelagodb-history")
 
 timings = False
 timings_csv = False
@@ -202,7 +202,7 @@ class ProcessObj:
 
 def echo_output(pipe):
     for line in iter(pipe.readline, ''):
-        print("raw: " + line[:-1])
+        print("proteus: " + line[:-1])
         for kw in kws:
             if line.startswith(kw):
                 q.put(line[:-1])
@@ -218,8 +218,8 @@ class ExecutorError(Exception):
 class Executor(ProcessObj):
     def __init__(self, args):
         ProcessObj.__init__(self)
-        wd = os.path.join(os.path.dirname(__file__), r"../../opt/raw")
-        self.p = Popen(["./rawmain-server"], stdin=PIPE, stdout=PIPE, cwd=wd)
+        wd = os.path.join(os.path.dirname(__file__), r"../../opt/pelago")
+        self.p = Popen(["./proteusmain-server"], stdin=PIPE, stdout=PIPE, cwd=wd)
         self.t = threading.Thread(target=echo_output, args=(self.p.stdout, ))
         self.t.start()
         self.name = "executor"
