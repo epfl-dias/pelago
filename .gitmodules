@@ -1,37 +1,33 @@
-[submodule "src/raw-jit-executor"]
-	path = src/raw-jit-executor
-	url = ../raw-jit-executor.git
-	branch = gpu
-[submodule "src/rapidjson"]
+[submodule "external/mit/rapidjson"]
 	path = external/mit/rapidjson
 	url = https://github.com/miloyip/rapidjson
-[submodule "src/gtest"]
+[submodule "external/bsd/gtest"]
 	path = external/bsd/gtest
 	url = https://github.com/google/googletest.git
-[submodule "src/glog"]
+[submodule "external/bsd/glog"]
 	path = external/bsd/glog
 	url = https://github.com/google/glog.git
-[submodule "src/clang"]
+[submodule "external/bsd/clang"]
 	path = external/bsd/clang
 	url = https://github.com/llvm-mirror/clang
 	branch = release_70
-[submodule "src/compiler-rt"]
+[submodule "external/bsd/compiler-rt"]
 	path = external/bsd/compiler-rt
 	url = https://github.com/llvm-mirror/compiler-rt
 	branch = release_70
-[submodule "src/libcxx"]
+[submodule "external/bsd/libcxx"]
 	path = external/bsd/libcxx
 	url = https://github.com/llvm-mirror/libcxx
 	branch = release_70
-[submodule "src/libcxxabi"]
+[submodule "external/bsd/libcxxabi"]
 	path = external/bsd/libcxxabi
 	url = https://github.com/llvm-mirror/libcxxabi
 	branch = release_70
-[submodule "src/libunwind"]
+[submodule "external/bsd/libunwind"]
 	path = external/bsd/libunwind
 	url = https://github.com/llvm-mirror/libunwind
 	branch = release_70
-[submodule "src/llvm"]
+[submodule "external/bsd/llvm"]
 	path = external/bsd/llvm
 	url = https://github.com/llvm-mirror/llvm
 	branch = release_70
@@ -39,12 +35,15 @@
 	path = external/bsd/clang-tools-extra
 	url = https://github.com/llvm-mirror/clang-tools-extra
 	branch = release_70
-[submodule "src/planner"]
+[submodule "proteus"]
+	path = src/executor
+    url = ../proteus.git
+[submodule "clotho"]
 	path = src/planner
-	url = ../sqlplanner.git
-[submodule "src/panorama"]
+	url = ../clotho.git
+[submodule "panorama"]
 	path = src/panorama
 	url = ../panorama.git
-[submodule "src/SQLPlanner"]
+[submodule "deprecated-planner"]
 	path = src/SQLPlanner
-	url = ../sqlplanner.git
+	url = ../clotho.git

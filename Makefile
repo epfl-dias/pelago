@@ -22,11 +22,11 @@ export CC CPP CXX
 endif
 
 # List of all the projects / repositories
-PROJECTS:= llvm glog gtest rapidjson raw-jit-executor avatica planner SQLPlanner
+PROJECTS:= llvm glog gtest rapidjson executor avatica planner SQLPlanner
 
 #FIXME: Currently coordinator.py depends on SQLPlanner to be build, and not planner.
 #	Also, it assumes a fixed folder layout, and execution from the src folder.
-all: llvm | .panorama.checkout_done raw-jit-executor planner SQLPlanner
+all: llvm | .panorama.checkout_done executor planner SQLPlanner
 	@echo "-----------------------------------------------------------------------"
 	@echo ""
 
@@ -45,11 +45,11 @@ run-client: avatica
 # calling it.
 #######################################################################
 
-.PHONY: raw-jit-executor
-raw-jit-executor: external-libs .raw-jit-executor.install_done
+.PHONY: executor
+executor: external-libs .executor.install_done
 	# This is the main tree, so do not shortcut it
-	rm .raw-jit-executor.install_done
-	rm .raw-jit-executor.build_done
+	rm .executor.install_done
+	rm .executor.build_done
 
 .PHONY: planner
 planner: avatica .planner.install_done
@@ -136,11 +136,11 @@ do-conf-glog: .glog.checkout_done llvm
 		${COMMON_ENV} \
 		ac_cv_have_libgflags=0 ac_cv_lib_gflags_main=no ./configure --prefix ${INSTALL_DIR}
 
-do-conf-raw-jit-executor: .raw-jit-executor.checkout_done external-libs
-	[ -d ${BUILD_DIR}/raw-jit-executor ] || mkdir -p ${BUILD_DIR}/raw-jit-executor
-	cd ${BUILD_DIR}/raw-jit-executor && \
+do-conf-executor: .executor.checkout_done external-libs
+	[ -d ${BUILD_DIR}/executor ] || mkdir -p ${BUILD_DIR}/executor
+	cd ${BUILD_DIR}/executor && \
 		${COMMON_ENV} \
-		$(CMAKE) ${SRC_DIR}/raw-jit-executor \
+		$(CMAKE) ${SRC_DIR}/executor \
 			-DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
 
 # RapidJSON is a head-only library, but it will try to build documentation,
@@ -176,7 +176,7 @@ do-conf-planner: .planner.checkout_done
 #######################################################################
 
 .PHONY: clean
-clean: clean-raw-jit-executor
+clean: clean-executor
 
 #######################################################################
 # Retrieve common definitions and targets.
