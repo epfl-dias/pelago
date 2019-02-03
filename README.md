@@ -1,4 +1,4 @@
-# pelagos Project
+# Pelago Project
 
 ## Requirements
 
