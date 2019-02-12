@@ -32,7 +32,7 @@ all: llvm | .panorama.checkout_done executor planner SQLPlanner
 
 run-server: all
 	cd ${INSTALL_DIR}/pelago && \
-		java -jar ${INSTALL_DIR}/bin/SQLPlanner-*.jar \
+		java -jar ${INSTALL_DIR}/bin/clotho-*.jar \
 			--server inputs/plans/schema.json
 
 run-client: avatica
@@ -86,7 +86,7 @@ do-install-gtest: .gtest.build_done
 
 do-install-planner: .planner.build_done
 	[ -d ${INSTALL_DIR}/bin ] || mkdir -p ${INSTALL_DIR}/bin
-	cp ${SRC_DIR}/planner/target/scala-*/SQLPlanner-*.jar ${INSTALL_DIR}/bin/
+	cp ${SRC_DIR}/planner/target/scala-*/clotho-*.jar ${INSTALL_DIR}/bin/
 
 do-install-avatica:
 	[ -d ${INSTALL_DIR}/lib ] || mkdir -p ${INSTALL_DIR}/lib
