@@ -36,7 +36,7 @@ run-server: all
 			--server inputs/plans/schema.json
 
 run-client: avatica
-	JAVA_CLASSPATH=${INSTALL_DIR}/lib/avatica-1.12.0.jar \
+	JAVA_CLASSPATH=${INSTALL_DIR}/lib/avatica-1.13.0.jar \
 		sqlline --color=true \
 			-u "jdbc:avatica:remote:url=http://localhost:8081;serialization=PROTOBUF"
 
@@ -91,8 +91,8 @@ do-install-planner: .planner.build_done
 do-install-avatica:
 	[ -d ${INSTALL_DIR}/lib ] || mkdir -p ${INSTALL_DIR}/lib
 	# Direct downloads will trip in no time blacklisting of servers.
-	cd ${INSTALL_DIR}/lib && curl -O http://central.maven.org/maven2/org/apache/calcite/avatica/avatica/1.12.0/avatica-1.12.0.jar
-	#cp ${EXTERNAL_DIR}/avatica-1.12.0.jar ${INSTALL_DIR}/lib
+	cd ${INSTALL_DIR}/lib && curl -O http://central.maven.org/maven2/org/apache/calcite/avatica/avatica/1.13.0/avatica-1.13.0.jar
+	#cp ${EXTERNAL_DIR}/avatica-1.13.0.jar ${INSTALL_DIR}/lib
 
 # As we just download the binary, there is no point in checking for all
 # the preceding steps.
