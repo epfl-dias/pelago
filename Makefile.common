@@ -214,18 +214,11 @@ do-checkout-llvm:
 	ln -sf ../../libunwind ${BSD_DIR}/llvm/projects/libunwind
 	[ -d ${BSD_DIR}/llvm/tools/clang/tools ] || mkdir -p ${BSD_DIR}/llvm/tools/clang/tools
 	ln -sf ../../clang-tools-extra ${BSD_DIR}/llvm/tools/clang/tools/extra
-	# Optional.h from LLVM 7.0 had some transformations that seem to confuse
-	# GCC, causing problems linking gcc-generated LLVM libraries to
-	# clang-generated code.
-	cd ${BSD_DIR}/llvm && git apply ${PROJECT_DIR}/patches/0001-llvm-optional.h.patch
 	# BasicBlock.h header contains ">>>" which is causing problems when
 	# compiling for CUDA, as it confuses clang to believe it is part of
 	# a kernel launch.
-	cd ${BSD_DIR}/llvm && git apply ${PROJECT_DIR}/patches/0002-llvm.patch
-	# Import from https://github.com/rsmmr/install-clang, the clang
-	# patch which fixes some linking issues. Otherwise libstdc++
-	# keeps getting pulled in.
-	cd ${BSD_DIR}/clang && git apply ${PROJECT_DIR}/patches/0003-tools--clang--linker-args.patch
+	# There is also a fix for an empty statement error.
+	cd ${BSD_DIR}/llvm && git apply ${PROJECT_DIR}/patches/0001-llvm.patch
 
 #######################################################################
 # Clean targets
