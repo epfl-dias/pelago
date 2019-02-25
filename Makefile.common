@@ -341,7 +341,7 @@ do-build-%: .%.configure_done
 
 .PHONY: do-checkout-%
 do-checkout-%:
-	git submodule update --init --recursive \
+	git submodule update ${SHALLOW_LLVM_SUBMODULES} --init --recursive \
 		$$(git submodule status | grep $$(echo $@ | sed -e 's,do-checkout-,,') | cut -d ' ' -f 3)
 
 .PRECIOUS: .%.install_done
