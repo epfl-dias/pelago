@@ -172,6 +172,11 @@ do-conf-planner: .planner.checkout_done
 .PRECIOUS: ${BSD_DIR}/gtest
 .PRECIOUS: ${MIT_DIR}/rapidjson
 
+do-checkout-rapidjson:
+	git submodule update ${SHALLOW_LLVM_SUBMODULES} --init --recursive ${MIT_DIR}/rapidjson
+	# Local patch to fix empty statement error
+	cd ${MIT_DIR}/rapidjson && git apply ${PROJECT_DIR}/patches/0001-rapidjson-empty-statements.patch
+
 #######################################################################
 # Clean targets
 #######################################################################

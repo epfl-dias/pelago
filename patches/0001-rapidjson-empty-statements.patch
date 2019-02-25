@@ -1,0 +1,20 @@
+--- a/include/rapidjson/schema.h	2019-02-25 17:21:51.493011733 +0100
++++ b/include/rapidjson/schema.h	2019-02-25 19:41:55.678838277 +0100
+@@ -2076,7 +2076,7 @@
+     if (!BeginValue() || !CurrentSchema().method arg1) {\
+         RAPIDJSON_SCHEMA_HANDLE_BEGIN_VERBOSE_();\
+         return valid_ = false;\
+-    }
++    } ((void)(0))
+ 
+ #define RAPIDJSON_SCHEMA_HANDLE_PARALLEL_(method, arg2)\
+     for (Context* context = schemaStack_.template Bottom<Context>(); context != schemaStack_.template End<Context>(); context++) {\
+@@ -2088,7 +2088,7 @@
+         if (context->patternPropertiesValidators)\
+             for (SizeType i_ = 0; i_ < context->patternPropertiesValidatorCount; i_++)\
+                 static_cast<GenericSchemaValidator*>(context->patternPropertiesValidators[i_])->method arg2;\
+-    }
++    } ((void)(0))
+ 
+ #define RAPIDJSON_SCHEMA_HANDLE_END_(method, arg2)\
+     return valid_ = EndValue() && (!outputHandler_ || outputHandler_->method arg2)
