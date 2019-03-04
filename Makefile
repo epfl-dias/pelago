@@ -142,6 +142,7 @@ do-conf-executor: .executor.checkout_done external-libs
 		${COMMON_ENV} \
 		$(CMAKE) ${SRC_DIR}/executor \
 			-DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
+			-DSTANDALONE=OFF \
 
 # RapidJSON is a head-only library, but it will try to build documentation,
 # examples and unit-tests unless explicitly told not to do so.

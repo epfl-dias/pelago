@@ -14,8 +14,12 @@ python
 python-pip
 python-setuptools
 openjdk-11-jre-headless
-clang
+clang-7
+llvm-7-dev
 clang-format-7
+libc++abi-7-dev
+libgoogle-glog-dev
+rapidjson-dev
 libxml2-dev
 sqlline
 curl
