@@ -90,9 +90,7 @@ do-install-planner: .planner.build_done
 
 do-install-avatica:
 	[ -d ${INSTALL_DIR}/lib ] || mkdir -p ${INSTALL_DIR}/lib
-	# Direct downloads will trip in no time blacklisting of servers.
 	cd ${INSTALL_DIR}/lib && curl -O http://central.maven.org/maven2/org/apache/calcite/avatica/avatica/1.13.0/avatica-1.13.0.jar
-	#cp ${EXTERNAL_DIR}/avatica-1.13.0.jar ${INSTALL_DIR}/lib
 
 # As we just download the binary, there is no point in checking for all
 # the preceding steps.
@@ -142,7 +140,7 @@ do-conf-executor: .executor.checkout_done external-libs
 		${COMMON_ENV} \
 		$(CMAKE) ${SRC_DIR}/executor \
 			-DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
-			-DSTANDALONE=OFF \
+			-DSTANDALONE=OFF
 
 # RapidJSON is a head-only library, but it will try to build documentation,
 # examples and unit-tests unless explicitly told not to do so.
