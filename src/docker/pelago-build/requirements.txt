@@ -10,16 +10,22 @@ autoconf
 automake
 libtool
 sbt
+# Coordinator & data preparation
 python
 python-pip
 python-setuptools
+## required by jpype1
+python-dev
 openjdk-11-jre-headless
+# Formatting the code and style checks
+clang-format-7
+# LLVM to build subprojects as stand-alones
 clang-7
 llvm-7-dev
-clang-format-7
 libc++abi-7-dev
 libgoogle-glog-dev
 rapidjson-dev
 libxml2-dev
+# UI
 sqlline
 curl
