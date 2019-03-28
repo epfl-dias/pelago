@@ -37,7 +37,7 @@
 	branch = release_80
 [submodule "proteus"]
 	path = src/executor
-    url = ../proteus.git
+	url = ../proteus.git
 [submodule "clotho"]
 	path = src/planner
 	url = ../clotho.git
