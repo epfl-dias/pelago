@@ -1,6 +1,7 @@
 [submodule "external/mit/rapidjson"]
 	path = external/mit/rapidjson
 	url = https://github.com/miloyip/rapidjson
+	ignore = dirty
 [submodule "external/bsd/gtest"]
 	path = external/bsd/gtest
 	url = https://github.com/google/googletest.git
@@ -31,6 +32,7 @@
 	path = external/bsd/llvm
 	url = https://github.com/llvm-mirror/llvm
 	branch = release_80
+	ignore = dirty
 [submodule "external/bsd/clang-tools-extra"]
 	path = external/bsd/clang-tools-extra
 	url = https://github.com/llvm-mirror/clang-tools-extra
