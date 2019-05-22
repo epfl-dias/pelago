@@ -11,7 +11,7 @@ RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 2EE0EA64E40A89B
 
 # LLVM repository with the version we are building
 # used to install clang-format without building LLVM, for style checks
-RUN echo "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-8 main" >> /etc/apt/sources.list.d/sbt.list
+RUN echo "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-8 main" >> /etc/apt/sources.list.d/llvm.list
 RUN apt-key adv --fetch-keys https://apt.llvm.org/llvm-snapshot.gpg.key
 
 
