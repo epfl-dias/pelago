@@ -25,3 +25,6 @@
 [submodule "deprecated-planner"]
 	path = src/SQLPlanner
 	url = ../clotho.git
+[submodule "src/oltp"]
+	path = src/oltp
+	url = git@gitlab.epfl.ch:DIAS/PROJECTS/caldera/aeolus.git

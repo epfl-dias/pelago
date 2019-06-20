@@ -22,11 +22,11 @@ export CC CPP CXX
 endif
 
 # List of all the projects / repositories
-PROJECTS:= llvm glog gtest rapidjson executor avatica planner SQLPlanner
+PROJECTS:= llvm glog gtest rapidjson executor oltp avatica planner SQLPlanner
 
 #FIXME: Currently coordinator.py depends on SQLPlanner to be build, and not planner.
 #	Also, it assumes a fixed folder layout, and execution from the src folder.
-all: llvm | .panorama.checkout_done executor planner SQLPlanner
+all: llvm | .panorama.checkout_done executor oltp planner SQLPlanner
 	@echo "-----------------------------------------------------------------------"
 	@echo ""
 
@@ -50,6 +50,12 @@ executor: external-libs .executor.install_done
 	# This is the main tree, so do not shortcut it
 	rm .executor.install_done
 	rm .executor.build_done
+
+.PHONY: oltp
+oltp: external-libs .oltp.install_done
+	# This is the main tree, so do not shortcut it
+	rm .oltp.install_done
+	rm .oltp.build_done
 
 .PHONY: planner
 planner: avatica .planner.install_done
@@ -141,6 +147,14 @@ do-conf-executor: .executor.checkout_done external-libs
 		$(CMAKE) ${SRC_DIR}/executor \
 			-DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
 			-DSTANDALONE=OFF
+
+do-conf-oltp: .oltp.checkout_done external-libs
+	[ -d ${BUILD_DIR}/oltp ] || mkdir -p ${BUILD_DIR}/oltp
+	cd ${BUILD_DIR}/oltp && \
+		${COMMON_ENV} \
+		$(CMAKE) ${SRC_DIR}/oltp \
+			-DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
+			-DSTANDALONE=OFF \
 
 # RapidJSON is a head-only library, but it will try to build documentation,
 # examples and unit-tests unless explicitly told not to do so.
