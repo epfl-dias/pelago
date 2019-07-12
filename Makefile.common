@@ -53,6 +53,7 @@ LLVM_ENV := \
 
 # Flags shared between all stages
 LLVM_CMAKE_COMMON := \
+	-DLLVM_ENABLE_PROJECTS="clang;clang-tools-extra;libcxx;libcxxabi;libunwind;compiler-rt" \
 	-DBUILD_SHARED_LIBS=ON \
 	-DC_INCLUDE_DIRS=/usr/include/${TRIPLE}:/usr/include \
 	-DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
@@ -140,7 +141,7 @@ do-conf-llvm: .llvm.bootstrap_stage1_done
 		unset CFLAGS CXXFLAGS CPPFLAGS LDFLAGS LD_LIBRARY_PATH DYLD_LIBRARY_PATH; \
 		eval ${LLVM_ENV} \
 		cd ${LLVM_BUILD_STAGE2}; \
-		${CMAKE} ${BSD_DIR}/llvm ${LLVM_CMAKE_STAGE2}; \
+		${CMAKE} ${BSD_DIR}/llvm-project/llvm ${LLVM_CMAKE_STAGE2}; \
 	)
 
 #######################################################################
@@ -160,7 +161,7 @@ do-conf-llvm: .llvm.bootstrap_stage1_done
 			export CXX="${LLVM_INSTALL_STAGE0}/bin/clang++"; \
 		fi; \
 		cd ${LLVM_BUILD_STAGE1}; \
-		${CMAKE} ${BSD_DIR}/llvm ${LLVM_CMAKE_STAGE1}; \
+		${CMAKE} ${BSD_DIR}/llvm-project/llvm ${LLVM_CMAKE_STAGE1}; \
 		make -j ${JOBS} install \
 	)
 	touch .llvm.bootstrap_stage1_done
@@ -172,7 +173,7 @@ do-conf-llvm: .llvm.bootstrap_stage1_done
 		unset CFLAGS CXXFLAGS CPPFLAGS LDFLAGS LD_LIBRARY_PATH DYLD_LIBRARY_PATH; \
 		export CC="${CC}" CPP="${CPP}" CXX="${CXX}"; \
 		cd ${LLVM_BUILD_STAGE0}; \
-		${CMAKE} ${BSD_DIR}/llvm ${LLVM_CMAKE_STAGE0}; \
+		${CMAKE} ${BSD_DIR}/llvm-project/llvm ${LLVM_CMAKE_STAGE0}; \
 		make -j ${JOBS} install \
 	)
 	touch .llvm.bootstrap_stage0_done
@@ -189,36 +190,14 @@ $$(case $$(git --version) in \
 	*) echo "";; \
 esac)
 
-.PRECIOUS: ${BSD_DIR}/clang
-.PRECIOUS: ${BSD_DIR}/compiler-rt
-.PRECIOUS: ${BSD_DIR}/libcxx
-.PRECIOUS: ${BSD_DIR}/libcxxabi
-.PRECIOUS: ${BSD_DIR}/libunwind
-.PRECIOUS: ${BSD_DIR}/llvm
+.PRECIOUS: ${BSD_DIR}/llvm-project
 
 do-checkout-llvm:
 	# No way of adding from a top level submodules within sub-
 	# modules, so stickying to this method.
 	git submodule update ${SHALLOW_LLVM_SUBMODULES} --init --recursive \
-		${BSD_DIR}/llvm \
-		${BSD_DIR}/clang \
-		${BSD_DIR}/compiler-rt \
-		${BSD_DIR}/libcxx \
-		${BSD_DIR}/libcxxabi \
-		${BSD_DIR}/libunwind \
-		${BSD_DIR}/clang-tools-extra
-	ln -sf ../../clang ${BSD_DIR}/llvm/tools/clang
-	ln -sf ../../compiler-rt ${BSD_DIR}/llvm/projects/compiler-rt
-	ln -sf ../../libcxx ${BSD_DIR}/llvm/projects/libcxx
-	ln -sf ../../libcxxabi ${BSD_DIR}/llvm/projects/libcxxabi
-	ln -sf ../../libunwind ${BSD_DIR}/llvm/projects/libunwind
-	[ -d ${BSD_DIR}/llvm/tools/clang/tools ] || mkdir -p ${BSD_DIR}/llvm/tools/clang/tools
-	ln -sf ../../clang-tools-extra ${BSD_DIR}/llvm/tools/clang/tools/extra
-	# BasicBlock.h header contains ">>>" which is causing problems when
-	# compiling for CUDA, as it confuses clang to believe it is part of
-	# a kernel launch.
-	# There is also a fix for an empty statement error.
-	cd ${BSD_DIR}/llvm && git apply ${PROJECT_DIR}/patches/0001-llvm.patch
+		${BSD_DIR}/llvm-project
+	cd ${BSD_DIR}/llvm-project && git apply ${PROJECT_DIR}/patches/0001-llvm.patch
 
 #######################################################################
 # Clean targets
