@@ -1,0 +1,38 @@
+diff --git a/clang/lib/Headers/__clang_cuda_intrinsics.h b/clang/lib/Headers/__clang_cuda_intrinsics.h
+index 2970d17f89e..7429794e529 100644
+--- a/clang/lib/Headers/__clang_cuda_intrinsics.h
++++ b/clang/lib/Headers/__clang_cuda_intrinsics.h
+@@ -211,7 +211,11 @@ inline __device__ unsigned int __ballot_sync(unsigned int mask, int pred) {
+   return __nvvm_vote_ballot_sync(mask, pred);
+ }
+ 
+-inline __device__ unsigned int __activemask() { return __nvvm_vote_ballot(1); }
++inline __device__ unsigned int __activemask() {   
++  unsigned int ret;
++  asm volatile ("activemask.b32 %0;" : "=r"(ret));
++  return ret;
++}
+ 
+ inline __device__ unsigned int __fns(unsigned mask, unsigned base, int offset) {
+   return __nvvm_fns(mask, base, offset);
+diff --git a/llvm/lib/ExecutionEngine/RuntimeDyld/RuntimeDyldELF.cpp b/llvm/lib/ExecutionEngine/RuntimeDyld/RuntimeDyldELF.cpp
+index 60041a45e2b..c4327f01b88 100644
+--- a/llvm/lib/ExecutionEngine/RuntimeDyld/RuntimeDyldELF.cpp
++++ b/llvm/lib/ExecutionEngine/RuntimeDyld/RuntimeDyldELF.cpp
+@@ -796,9 +796,13 @@ void RuntimeDyldELF::resolvePPC64Relocation(const SectionEntry &Section,
+   case ELF::R_PPC64_REL32: {
+     uint64_t FinalAddress = Section.getLoadAddressWithOffset(Offset);
+     int64_t delta = static_cast<int64_t>(Value - FinalAddress + Addend);
+-    if (SignExtend64<32>(delta) != delta)
+-      llvm_unreachable("Relocation R_PPC64_REL32 overflow");
+-    writeInt32BE(LocalAddress, delta);
++    if (SignExtend64<32>(delta) != delta){
++      uint64_t FinalAddress = Section.getLoadAddressWithOffset(Offset);
++      uint64_t Delta = Value - FinalAddress + Addend;
++      writeInt64BE(LocalAddress, Delta);
++    } else {
++      writeInt32BE(LocalAddress, delta);
++    }
+   } break;
+   case ELF::R_PPC64_REL64: {
+     uint64_t FinalAddress = Section.getLoadAddressWithOffset(Offset);
