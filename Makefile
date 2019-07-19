@@ -26,7 +26,7 @@ PROJECTS:= llvm glog gtest rapidjson executor oltp avatica planner SQLPlanner
 
 #FIXME: Currently coordinator.py depends on SQLPlanner to be build, and not planner.
 #	Also, it assumes a fixed folder layout, and execution from the src folder.
-all: llvm | .panorama.checkout_done executor oltp planner SQLPlanner
+all: llvm | .panorama.checkout_done executor oltp htap planner SQLPlanner
 	@echo "-----------------------------------------------------------------------"
 	@echo ""
 
@@ -56,6 +56,11 @@ oltp: external-libs .oltp.install_done
 	# This is the main tree, so do not shortcut it
 	rm .oltp.install_done
 	rm .oltp.build_done
+
+htap: external-libs .htap.install_done
+	# This is the main tree, so do not shortcut it
+	rm .htap.install_done
+	rm .htap.build_done
 
 .PHONY: planner
 planner: avatica .planner.install_done
@@ -155,6 +160,17 @@ do-conf-oltp: .oltp.checkout_done external-libs
 		$(CMAKE) ${SRC_DIR}/oltp \
 			-DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
 			-DSTANDALONE=OFF \
+			-DPROTEUS_SOURCE_DIR=${SRC_DIR}/executor
+
+do-conf-htap: .htap.checkout_done external-libs
+	[ -d ${BUILD_DIR}/htap ] || mkdir -p ${BUILD_DIR}/htap
+	cd ${BUILD_DIR}/htap && \
+		${COMMON_ENV} \
+		$(CMAKE) ${SRC_DIR}/htap \
+			-DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
+			-DPROTEUS_SOURCE_DIR=${SRC_DIR}/executor
+
+
 
 # RapidJSON is a head-only library, but it will try to build documentation,
 # examples and unit-tests unless explicitly told not to do so.
@@ -194,7 +210,7 @@ do-checkout-rapidjson:
 #######################################################################
 
 .PHONY: clean
-clean: clean-executor
+clean: clean-executor clean-oltp clean-htap
 
 #######################################################################
 # Retrieve common definitions and targets.
