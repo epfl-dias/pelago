@@ -168,7 +168,8 @@ do-conf-htap: .htap.checkout_done external-libs
 		${COMMON_ENV} \
 		$(CMAKE) ${SRC_DIR}/htap \
 			-DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
-			-DPROTEUS_SOURCE_DIR=${SRC_DIR}/executor
+			-DPROTEUS_SOURCE_DIR=${SRC_DIR}/executor \
+			-DAEOLUS_SOURCE_DIR=${SRC_DIR}/oltp
 
 
 

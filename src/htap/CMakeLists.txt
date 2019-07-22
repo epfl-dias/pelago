@@ -7,7 +7,7 @@ project(htap)
 #-----------------------------------------------------------------------
 # Simply comment the lines of this section to skip some of the binaries
 # to build.
-set(MAINS server-multimaster) # Interface to the executor
+set(MAINS server-cow) #server-multimaster) # Interface to the executor
 
 # Tests
 # not too sure if we should build "main", it looks like it has the same
@@ -17,7 +17,6 @@ set(UNIT_TESTS FALSE)
 
 # C++ Source files
 set(SOURCES
-    server-multimaster.cpp
     cm/comm_manager.cpp
     sm/storage_manager.cpp
     )
@@ -73,7 +72,7 @@ string(STRIP "${COMPILER_FLAGS} -fvisibility-inlines-hidden" COMPILER_FLAGS)
 string(STRIP "${WARNING_FLAGS} -Werror" WARNING_FLAGS)
 
 # LLVM Code generates the following warnings
-string(STRIP "${WARNING_FLAGS} -Wno-disabled-macro-expansion -Wno-c++2a-compat -Wno-atomic-implicit-seq-cst -Wno-extra-semi-stmt" WARNING_FLAGS)
+string(STRIP "${WARNING_FLAGS} -Wno-unused-template -Wno-disabled-macro-expansion -Wno-c++2a-compat -Wno-atomic-implicit-seq-cst -Wno-extra-semi-stmt" WARNING_FLAGS)
 string(STRIP "${WARNING_FLAGS} -Wno-unused-parameter" WARNING_FLAGS)
 string(STRIP "${WARNING_FLAGS} -Wno-padded" WARNING_FLAGS)
 string(STRIP "${WARNING_FLAGS} -Wno-missing-noreturn" WARNING_FLAGS)
@@ -150,6 +149,9 @@ include_directories(
 	"${PROJECT_SOURCE_DIR}"
 	"${PROTEUS_SOURCE_DIR}"
 	"${PROTEUS_SOURCE_DIR}/codegen"
+	"${AEOLUS_SOURCE_DIR}"
+	"${AEOLUS_SOURCE_DIR}/benchmarks"
+	"${AEOLUS_SOURCE_DIR}/engine"
 	)
 
 include_directories(
@@ -299,6 +301,8 @@ endif()
 #set(default_libs ${default_libs} codegen )
 set(default_libs ${default_libs} -lnuma )
 set(default_libs ${default_libs} -lcodegen )
+set(default_libs ${default_libs} -laeolus_engine )
+set(default_libs ${default_libs} -laeolus_bench )
 set(default_libs ${default_libs} ${LLVM_LIBS} -lLLVMSupport)
 set(default_libs ${default_libs} ${CUDA_LIBS})
 set(default_libs ${default_libs} ${GLOG})
@@ -333,7 +337,7 @@ set(default_libs ${default_libs} -lc++abi -lpthread -lrt)
 # Build our executables
 #-----------------------------------------------------------------------
 foreach(target ${MAINS})
-	add_executable(htap-${target} ${SOURCES})
+	add_executable(htap-${target} ${target}.cpp ${SOURCES})
 	target_link_libraries(htap-${target} ${default_libs})
 	install(TARGETS htap-${target}
 		RUNTIME DESTINATION htap
