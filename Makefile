@@ -162,12 +162,19 @@ do-conf-oltp: .oltp.checkout_done external-libs
 			-DSTANDALONE=OFF \
 			-DPROTEUS_SOURCE_DIR=${SRC_DIR}/executor
 
+.htap.checkout_done:
+	@echo "-----------------------------------------------------------------------"
+	@echo "-- $$(echo $@ | sed -e 's,^[.],,' -e 's,_done,,')..."
+	@echo "-- $$(echo $@ | sed -e 's,^[.],,' -e 's,_done,,') done."
+	touch $@
+
 do-conf-htap: .htap.checkout_done external-libs
 	[ -d ${BUILD_DIR}/htap ] || mkdir -p ${BUILD_DIR}/htap
 	cd ${BUILD_DIR}/htap && \
 		${COMMON_ENV} \
 		$(CMAKE) ${SRC_DIR}/htap \
 			-DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
+			-DSTANDALONE=OFF \
 			-DPROTEUS_SOURCE_DIR=${SRC_DIR}/executor \
 			-DAEOLUS_SOURCE_DIR=${SRC_DIR}/oltp
 
