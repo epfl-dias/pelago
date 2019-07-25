@@ -26,7 +26,7 @@ PROJECTS:= llvm glog gtest rapidjson executor oltp avatica planner SQLPlanner
 
 #FIXME: Currently coordinator.py depends on SQLPlanner to be build, and not planner.
 #	Also, it assumes a fixed folder layout, and execution from the src folder.
-all: llvm | .panorama.checkout_done executor oltp htap planner SQLPlanner
+all: llvm | .panorama.checkout_done oltp executor htap planner SQLPlanner
 	@echo "-----------------------------------------------------------------------"
 	@echo ""
 
@@ -151,7 +151,8 @@ do-conf-executor: .executor.checkout_done external-libs
 		${COMMON_ENV} \
 		$(CMAKE) ${SRC_DIR}/executor \
 			-DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
-			-DSTANDALONE=OFF
+			-DSTANDALONE=OFF \
+			-DAEOLUS_SOURCE_DIR=${SRC_DIR}/oltp
 
 do-conf-oltp: .oltp.checkout_done external-libs
 	[ -d ${BUILD_DIR}/oltp ] || mkdir -p ${BUILD_DIR}/oltp
