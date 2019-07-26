@@ -262,9 +262,9 @@ int main(int argc, char *argv[]) {
   bench::Benchmark *oltp_bench = init_oltp(txn_nodes[0].local_cores.size(), "");
   // bench::Benchmark *oltp_bench = init_oltp(4, "");
 
-  __itt_resume()
+  __itt_resume();
 
-      for (int i = 0; i < FLAGS_num_olap_clients; i++) {
+  for (int i = 0; i < FLAGS_num_olap_clients; i++) {
     olap_stats[i].shutdown = false;
     pid_t tmp = fork();
 
