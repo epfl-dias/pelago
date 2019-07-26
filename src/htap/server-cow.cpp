@@ -21,8 +21,8 @@
     RESULTING FROM THE USE OF THIS SOFTWARE.
 */
 
-#define NUM_TPCH_QUERIES 22
-#define NUM_OLAP_REPEAT 3
+#define NUM_TPCH_QUERIES 3
+#define NUM_OLAP_REPEAT 10
 
 #include <filesystem>
 #include <unistd.h>
@@ -61,11 +61,11 @@ DEFINE_bool(trace_allocations, false,
 DEFINE_bool(inc_buffers, false, "Use bigger block pools");
 DEFINE_uint64(num_olap_clients, 1, "Number of OLAP clients");
 DEFINE_uint64(num_oltp_clients, 1, "Number of OLTP clients");
+DEFINE_string(plan_json, "", "Plan to execute, takes priority over plan_dir");
 DEFINE_string(plan_dir, "inputs/plans/cpu-ssb",
               "Directory with plans to be executed");
 DEFINE_string(inputs_dir, "inputs/", "Data and catalog directory");
-DEFINE_uint64(expr_duration, 60,
-              "Duration of experiments in seconds before teardown.");
+DEFINE_bool(run_oltp, true, "Run OLTP");
 
 std::vector<pid_t> children;
 
@@ -77,9 +77,7 @@ struct OLAP_STATS {
 void init_olap_warmup() { proteus::init(FLAGS_inc_buffers); }
 
 std::vector<PreparedStatement>
-init_olap_sequence(const topology::cpunumanode &numa_node,
-                   // PreparedStatement &stmts[],
-                   std::string query_plans_dir) {
+init_olap_sequence(int &client_id, const topology::cpunumanode &numa_node) {
   // chdir("/home/raza/local/htap/opt/pelago");
 
   time_block t("TcodegenTotal_: ");
@@ -91,30 +89,40 @@ init_olap_sequence(const topology::cpunumanode &numa_node,
   std::vector<PreparedStatement> stmts;
 
   // std::string label_prefix("htap_server_" + std::to_string(getpid()) + "_");
-  std::string label_prefix("htap_" + std::to_string(getpid()) + "_q");
-  uint i = 0;
-  for (const auto &entry :
-       std::filesystem::directory_iterator(query_plans_dir)) {
+  std::string label_prefix("htap_" + std::to_string(getpid()) + "_c" +
+                           std::to_string(client_id) + "_q");
 
-    if (entry.path().filename().string()[0] == '.')
-      continue;
+  if (FLAGS_plan_json.length()) {
+    LOG(INFO) << "Compiling Plan:" << FLAGS_plan_json << std::endl;
 
-    if (entry.path().extension() == ".json") {
+    stmts.emplace_back(PreparedStatement::from(
+        FLAGS_plan_json, label_prefix + std::to_string(0), FLAGS_inputs_dir));
+  } else {
+    uint i = 0;
+    for (const auto &entry :
+         std::filesystem::directory_iterator(FLAGS_plan_dir)) {
 
-      std::string plan_path = entry.path().string();
-      std::string label = label_prefix + std::to_string(i++);
+      if (entry.path().filename().string()[0] == '.')
+        continue;
 
-      LOG(INFO) << "Compiling Query:" << plan_path << std::endl;
+      if (entry.path().extension() == ".json") {
 
-      stmts.emplace_back(
-          PreparedStatement::from(plan_path, label, FLAGS_inputs_dir));
+        std::string plan_path = entry.path().string();
+        std::string label = label_prefix + std::to_string(i++);
+
+        LOG(INFO) << "Compiling Query:" << plan_path << std::endl;
+
+        stmts.emplace_back(
+            PreparedStatement::from(plan_path, label, FLAGS_inputs_dir));
+      }
     }
   }
 
   return stmts;
 }
-void run_olap_sequence(std::vector<PreparedStatement> &olap_queries,
-                       int &client_id, struct OLAP_STATS *olap_stats,
+void run_olap_sequence(int &client_id,
+                       std::vector<PreparedStatement> &olap_queries,
+                       struct OLAP_STATS *olap_stats,
                        const topology::cpunumanode &numa_node) {
   // TODO: execute the generate pipelines. for TPC-H, 22 query sequence, and
   // return.
@@ -174,13 +182,13 @@ bench::Benchmark *init_oltp(int num_warehouses, std::string csv_path) {
   return bench;
 }
 
-void run_oltp(const topology::cpunumanode &numa_node, uint num_workers,
+void run_oltp(const scheduler::cpunumanode &numa_node, uint num_workers,
               bench::Benchmark *bench) {
 
-  // scheduler::AffinityManager::getInstance().set(
-  //    &scheduler::Topology::getInstance().get_worker_cores()->front());
+  scheduler::AffinityManager::getInstance().set(
+      &scheduler::Topology::getInstance().get_worker_cores()->front());
 
-  exec_location{numa_node}.activate();
+  // exec_location{(topology::cpunumanode)numa_node}.activate();
   auto &wp = scheduler::WorkerPool::getInstance();
   wp.init(bench);
   wp.start_workers(num_workers);
@@ -237,8 +245,6 @@ int main(int argc, char *argv[]) {
 
   set_trace_allocations(FLAGS_trace_allocations);
 
-  // INIT
-
   struct OLAP_STATS *olap_stats = (struct OLAP_STATS *)get_shm(
       "olap_stats_" + std::to_string(getpid()),
       sizeof(struct OLAP_STATS) * FLAGS_num_olap_clients);
@@ -253,12 +259,8 @@ int main(int argc, char *argv[]) {
 
   auto &txn_topo = scheduler::Topology::getInstance();
   auto &txn_nodes = txn_topo.getCpuNumaNodes();
-  // bench::Benchmark *oltp_bench = init_oltp(txn_nodes[0].local_cores.size(),
-  // "");
-  bench::Benchmark *oltp_bench = init_oltp(4, "");
-
-  // RUNOLTP
-  // run_oltp(txn_nodes[0], txn_nodes[0].local_cores.size(), oltp_bench);
+  bench::Benchmark *oltp_bench = init_oltp(txn_nodes[0].local_cores.size(), "");
+  // bench::Benchmark *oltp_bench = init_oltp(4, "");
 
   for (int i = 0; i < FLAGS_num_olap_clients; i++) {
     olap_stats[i].shutdown = false;
@@ -281,11 +283,11 @@ int main(int argc, char *argv[]) {
       LOG(INFO) << "[SERVER-COW] OLAP Client #" << i
                 << ": Compiling OLAP Sequence";
       std::vector<PreparedStatement> olap_queries =
-          init_olap_sequence(nodes[1], FLAGS_plan_dir);
+          init_olap_sequence(i, nodes[1]);
 
       LOG(INFO) << "[SERVER-COW] OLAP Client #" << i
                 << ": Running OLAP Sequence";
-      run_olap_sequence(olap_queries, i, olap_stats + i, nodes[1]);
+      run_olap_sequence(i, olap_queries, olap_stats + i, nodes[1]);
 
       LOG(INFO) << "[SERVER-COW] OLAP Client #" << i << ": Shutdown";
       shutdown_olap();
@@ -300,7 +302,8 @@ int main(int argc, char *argv[]) {
   if (children.size() != FLAGS_num_olap_clients)
     return 0;
 
-  // usleep(FLAGS_expr_duration * 1000000);
+  if (FLAGS_run_oltp)
+    run_oltp(txn_nodes[0], txn_nodes[0].local_cores.size(), oltp_bench);
 
   // Termination Condition.
   uint client_ctr = 0;
@@ -313,8 +316,7 @@ int main(int argc, char *argv[]) {
       usleep(1000000);
   }
 
-  // shutdown_oltp(true);
-  // shutdown_olap();
+  shutdown_oltp(true);
 
   // collect and print stats here.
 
