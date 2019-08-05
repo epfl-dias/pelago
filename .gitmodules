@@ -28,6 +28,7 @@
 [submodule "oltp"]
 	path = src/oltp
 	url = ../aeolus.git
-[submodule "src/frontends/R"]
+[submodule "frontends/R"]
 	path = src/frontends/R
 	url = ../ViDaR.git
+
