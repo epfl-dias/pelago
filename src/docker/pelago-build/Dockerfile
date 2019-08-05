@@ -1,4 +1,4 @@
-FROM nvidia/cuda:9.2-devel-ubuntu18.04
+FROM nvidia/cuda:10.1-devel-ubuntu18.04
 
 COPY requirements.txt /tmp/requirements.txt
 
@@ -14,14 +14,28 @@ RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 2EE0EA64E40A89B
 RUN echo "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-8 main" >> /etc/apt/sources.list.d/llvm.list
 RUN apt-key adv --fetch-keys https://apt.llvm.org/llvm-snapshot.gpg.key
 
-
-
 RUN apt update  -y && \
     apt upgrade -y && \
     apt install -y --no-install-recommends $(sed s/#.*$//g tmp/requirements.txt) && \
     apt autoremove -y && \
     apt autoclean && \
-    rm -rf /var/lib/apt/lists/* /var/log/dpkg.log
+    rm -rf /var/lib/apt/lists/* /var/log/dpkg.log && \
+    update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-8 100 && \
+    update-alternatives --install /usr/bin/clang clang /usr/bin/clang-8 100 && \
+    update-alternatives --install /usr/bin/llvm-config llvm-config /usr/bin/llvm-config-8 100 && \
+    update-alternatives --install /usr/bin/clang-format clang-format /usr/bin/clang-format-8 100
+
+# For now, we need clang++-9, as it's the only one recognizing CUDA 10.1 (but also keep LLVM 8 for clang-format)
+RUN echo "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic main" >> /etc/apt/sources.list.d/llvm.list && \
+    apt update  -y && \
+    apt upgrade -y && \
+    apt install -y --no-install-recommends clang++-9 llvm-9-dev libc++abi-9-dev&& \
+    apt autoremove -y && \
+    apt autoclean && \
+    rm -rf /var/lib/apt/lists/* /var/log/dpkg.log && \
+    update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-9 500 && \
+    update-alternatives --install /usr/bin/clang clang /usr/bin/clang-9 500 && \
+    update-alternatives --install /usr/bin/llvm-config llvm-config /usr/bin/llvm-config-9 500
 
 RUN ldconfig /usr/local/cuda/lib64
 
