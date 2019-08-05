@@ -182,53 +182,107 @@ build:
  <<: *test
  script:
   - make &> check_installed.txt || (tail -c 512k check_installed.txt && exit 1) # make sure that everything is compiled
-  - cd opt/pelago && ./unit-tests-threads &> thread_test_log.txt || (tail -c 512k thread_test_log.txt && exit 1)
+  - export CWD=$(pwd)
+  - cd opt/pelago && ./unit-tests-threads --gtest_output=xml:$CWD/report-threads.xml &> thread_test_log.txt || (tail -c 512k thread_test_log.txt && exit 1)
+ artifacts:
+  paths:
+   - report-*.xml
+  reports:
+   junit: report-*.xml
 
 2/9 test - Plan Parsing:
  <<: *test
  script:
   - make &> check_installed.txt || (tail -c 512k check_installed.txt && exit 1) # make sure that everything is compiled
-  - cd opt/pelago && ./unit-tests-plan-parsing &> plan_parsing_test_log.txt || (tail -c 512k plan_parsing_test_log.txt && exit 1)
+  - export CWD=$(pwd)
+  - cd opt/pelago && ./unit-tests-plan-parsing --gtest_output="xml:$CWD/report-plan-parsing.xml &> plan_parsing_test_log.txt || (tail -c 512k plan_parsing_test_log.txt && exit 1)
  allow_failure: true
+ artifacts:
+  paths:
+   - report-*.xml
+  reports:
+   junit: report-*.xml
 
 3/9 test - JSON:
  <<: *test
  script:
   - make &> check_installed.txt || (tail -c 512k check_installed.txt && exit 1) # make sure that everything is compiled
-  - cd opt/pelago && ./unit-tests-json &> json_test_log.txt || (tail -c 512k json_test_log.txt && exit 1)
+  - export CWD=$(pwd)
+  - cd opt/pelago && ./unit-tests-json --gtest_output="xml:$CWD/report-json.xml" &> json_test_log.txt || (tail -c 512k json_test_log.txt && exit 1)
  allow_failure: true
+ artifacts:
+  paths:
+   - report-*.xml
+  reports:
+   junit: report-*.xml
+
 
 4/9 test - Joins:
  <<: *test
  script:
   - make &> check_installed.txt || (tail -c 512k check_installed.txt && exit 1) # make sure that everything is compiled
-  - cd opt/pelago && ./unit-tests-joins &> joins_test_log.txt || (tail -c 512k joins_test_log.txt && exit 1)
+  - export CWD=$(pwd)
+  - cd opt/pelago && ./unit-tests-joins --gtest_output="xml:$CWD/report-joins.xml" &> joins_test_log.txt || (tail -c 512k joins_test_log.txt && exit 1)
  allow_failure: true
+ artifacts:
+  paths:
+   - report-*.xml
+  reports:
+   junit: report-*.xml
+
 
 5/9 test - Output:
  <<: *test
  script:
   - make &> check_installed.txt || (tail -c 512k check_installed.txt && exit 1) # make sure that everything is compiled
-  - cd opt/pelago && ./unit-tests-output &> output_test_log.txt || (tail -c 512k output_test_log.txt && exit 1)
+  - export CWD=$(pwd)
+  - cd opt/pelago && ./unit-tests-output --gtest_output="xml:$CWD/report-output.xml" &> output_test_log.txt || (tail -c 512k output_test_log.txt && exit 1)
  allow_failure: true
+ artifacts:
+  paths:
+   - report-*.xml
+  reports:
+   junit: report-*.xml
+
 
 6/9 test - GPU SSB SF100:
  <<: *test
  script:
   - make &> check_installed.txt || (tail -c 512k check_installed.txt && exit 1) # make sure that everything is compiled
-  - cd opt/pelago && ./unit-tests-gpu-ssb &> gpu_ssb_test_log.txt || (tail -c 512k gpu_ssb_test_log.txt && exit 1)
+  - export CWD=$(pwd)
+  - cd opt/pelago && ./unit-tests-gpu-ssb --gtest_output="xml:$CWD/report-gpu.xml" &> gpu_ssb_test_log.txt || (tail -c 512k gpu_ssb_test_log.txt && exit 1)
+ artifacts:
+  paths:
+   - report-*.xml
+  reports:
+   junit: report-*.xml
+
 
 7/9 test - CPU SSB SF100:
  <<: *test
  script:
   - make &> check_installed.txt || (tail -c 512k check_installed.txt && exit 1) # make sure that everything is compiled
-  - cd opt/pelago && ./unit-tests-cpu-ssb &> cpu_ssb_test_log.txt || (tail -c 512k cpu_ssb_test_log.txt && exit 1)
+  - export CWD=$(pwd)
+  - cd opt/pelago && ./unit-tests-cpu-ssb --gtest_output="xml:$CWD/report-cpu.xml" &> cpu_ssb_test_log.txt || (tail -c 512k cpu_ssb_test_log.txt && exit 1)
+ artifacts:
+  paths:
+   - report-*.xml
+  reports:
+   junit: report-*.xml
+
 
 8/9 test - Hybrid SSB SF100:
  <<: *test
  script:
   - make &> check_installed.txt || (tail -c 512k check_installed.txt && exit 1) # make sure that everything is compiled
-  - cd opt/pelago && ./unit-tests-hyb-ssb &> hyb_ssb_test_log.txt || (tail -c 512k hyb_ssb_test_log.txt && exit 1)
+  - export CWD=$(pwd)
+  - cd opt/pelago && ./unit-tests-hyb-ssb --gtest_output="xml:$CWD/report-hyb.xml" &> hyb_ssb_test_log.txt || (tail -c 512k hyb_ssb_test_log.txt && exit 1)
+ artifacts:
+  paths:
+   - report-*.xml
+  reports:
+   junit: report-*.xml
+
 
 9/9 test - Planner:
  <<: *test
@@ -237,7 +291,11 @@ build:
   - ln -s ../../src/executor/inputs src/planner/inputs
   - make &> check_installed.txt || (tail -c 512k check_installed.txt && exit 1) # make sure that everything is compiled
   - cd src/planner && sbt test &> planner_test_log.txt || (tail -c 512k planner_test_log.txt && exit 1)
-
+ artifacts:
+  paths:
+   - src/planner/target/test-reports/TEST-*.xml
+  reports:
+   junit: src/planner/target/test-reports/TEST-*.xml
 
 #----------------------------------------------------------------------------
 # Performance Tests
