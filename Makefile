@@ -174,6 +174,7 @@ do-conf-htap: .htap.checkout_done external-libs
 	cd ${BUILD_DIR}/htap && \
 		${COMMON_ENV} \
 		$(CMAKE) ${SRC_DIR}/htap \
+			-DCMAKE_LIBRARY_PATH=${INSTALL_DIR}/lib \
 			-DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
 			-DSTANDALONE=OFF \
 			-DPROTEUS_SOURCE_DIR=${SRC_DIR}/executor \

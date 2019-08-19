@@ -26,6 +26,8 @@ libc++abi-8-dev
 libgoogle-glog-dev
 rapidjson-dev
 libxml2-dev
+# RDMA
+librdmacm-dev
 # UI
 sqlline
 curl

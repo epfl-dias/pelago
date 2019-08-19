@@ -183,7 +183,7 @@ build:
  script:
   - make &> check_installed.txt || (tail -c 512k check_installed.txt && exit 1) # make sure that everything is compiled
   - export CWD=$(pwd)
-  - cd opt/pelago && ./unit-tests-threads --gtest_output=xml:$CWD/report-threads.xml &> thread_test_log.txt || (tail -c 512k thread_test_log.txt && exit 1)
+  - cd opt/pelago && ./unit-tests-threads --gtest_output="xml:$CWD/report-threads.xml" &> thread_test_log.txt || (tail -c 512k thread_test_log.txt && exit 1)
  artifacts:
   paths:
    - report-*.xml
@@ -195,7 +195,7 @@ build:
  script:
   - make &> check_installed.txt || (tail -c 512k check_installed.txt && exit 1) # make sure that everything is compiled
   - export CWD=$(pwd)
-  - cd opt/pelago && ./unit-tests-plan-parsing --gtest_output="xml:$CWD/report-plan-parsing.xml &> plan_parsing_test_log.txt || (tail -c 512k plan_parsing_test_log.txt && exit 1)
+  - cd opt/pelago && ./unit-tests-plan-parsing --gtest_output="xml:$CWD/report-plan-parsing.xml" &> plan_parsing_test_log.txt || (tail -c 512k plan_parsing_test_log.txt && exit 1)
  allow_failure: true
  artifacts:
   paths:
