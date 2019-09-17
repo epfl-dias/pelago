@@ -26,7 +26,7 @@ PROJECTS:= llvm glog gtest rapidjson executor oltp avatica planner SQLPlanner
 
 #FIXME: Currently coordinator.py depends on SQLPlanner to be build, and not planner.
 #	Also, it assumes a fixed folder layout, and execution from the src folder.
-all: llvm | .panorama.checkout_done oltp executor htap planner SQLPlanner
+all: llvm | .panorama.checkout_done executor oltp htap planner SQLPlanner
 	@echo "-----------------------------------------------------------------------"
 	@echo ""
 
