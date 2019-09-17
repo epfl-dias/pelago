@@ -178,7 +178,7 @@ build:
 
 #----------------------------------------------------------------------------
 # Functional Tests
-1/9 test - Threads:
+1/10 test - Threads:
  <<: *test
  script:
   - make &> check_installed.txt || (tail -c 512k check_installed.txt && exit 1) # make sure that everything is compiled
@@ -190,7 +190,7 @@ build:
   reports:
    junit: report-*.xml
 
-2/9 test - Plan Parsing:
+2/10 test - Plan Parsing:
  <<: *test
  script:
   - make &> check_installed.txt || (tail -c 512k check_installed.txt && exit 1) # make sure that everything is compiled
@@ -203,7 +203,7 @@ build:
   reports:
    junit: report-*.xml
 
-3/9 test - JSON:
+3/10 test - JSON:
  <<: *test
  script:
   - make &> check_installed.txt || (tail -c 512k check_installed.txt && exit 1) # make sure that everything is compiled
@@ -217,7 +217,7 @@ build:
    junit: report-*.xml
 
 
-4/9 test - Joins:
+4/10 test - Joins:
  <<: *test
  script:
   - make &> check_installed.txt || (tail -c 512k check_installed.txt && exit 1) # make sure that everything is compiled
@@ -231,7 +231,7 @@ build:
    junit: report-*.xml
 
 
-5/9 test - Output:
+5/10 test - Output:
  <<: *test
  script:
   - make &> check_installed.txt || (tail -c 512k check_installed.txt && exit 1) # make sure that everything is compiled
@@ -245,7 +245,7 @@ build:
    junit: report-*.xml
 
 
-6/9 test - GPU SSB SF100:
+6/10 test - GPU SSB SF100:
  <<: *test
  script:
   - make &> check_installed.txt || (tail -c 512k check_installed.txt && exit 1) # make sure that everything is compiled
@@ -258,7 +258,7 @@ build:
    junit: report-*.xml
 
 
-7/9 test - CPU SSB SF100:
+7/10 test - CPU SSB SF100:
  <<: *test
  script:
   - make &> check_installed.txt || (tail -c 512k check_installed.txt && exit 1) # make sure that everything is compiled
@@ -271,7 +271,7 @@ build:
    junit: report-*.xml
 
 
-8/9 test - Hybrid SSB SF100:
+8/10 test - Hybrid SSB SF100:
  <<: *test
  script:
   - make &> check_installed.txt || (tail -c 512k check_installed.txt && exit 1) # make sure that everything is compiled
@@ -283,8 +283,19 @@ build:
   reports:
    junit: report-*.xml
 
+9/10 test - COW:
+ <<: *test
+ script:
+  - make &> check_installed.txt || (tail -c 512k check_installed.txt && exit 1) # make sure that everything is compiled
+  - export CWD=$(pwd)
+  - cd opt/pelago && ./unit-tests-cow --gtest_output="xml:$CWD/report-cow.xml" &> cow_test_log.txt || (tail -c 512k cow_test_log.txt && exit 1)
+ artifacts:
+  paths:
+   - report-*.xml
+  reports:
+   junit: report-*.xml
 
-9/9 test - Planner:
+10/10 test - Planner:
  <<: *test
  script:
   - rm -r src/planner/inputs
