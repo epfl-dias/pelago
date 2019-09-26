@@ -46,6 +46,7 @@
 #include "codegen/util/jit/pipeline.hpp"
 #include "codegen/util/parallel-context.hpp"
 #include "storage/storage-manager.hpp"
+#include "util/timing.hpp"
 
 #if __has_include("ittnotify.h")
 #include <ittnotify.h>
