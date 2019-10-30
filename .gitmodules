@@ -25,12 +25,6 @@
 [submodule "deprecated-planner"]
 	path = src/SQLPlanner
 	url = ../clotho.git
-[submodule "oltp"]
-	path = src/oltp
-	url = ../aeolus.git
 [submodule "frontends/R"]
 	path = src/frontends/R
 	url = ../ViDaR.git
-[submodule "htap"]
-	path = src/htap
-	url = ../harmonia.git
