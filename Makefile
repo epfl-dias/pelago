@@ -22,7 +22,7 @@ export CC CPP CXX
 endif
 
 # List of all the projects / repositories
-PROJECTS:= llvm glog gtest rapidjson executor oltp avatica planner SQLPlanner
+PROJECTS:= llvm glog gtest rapidjson executor avatica planner SQLPlanner
 
 #FIXME: Currently coordinator.py depends on SQLPlanner to be build, and not planner.
 #	Also, it assumes a fixed folder layout, and execution from the src folder.
@@ -50,17 +50,6 @@ executor: external-libs .executor.install_done
 	# This is the main tree, so do not shortcut it
 	rm .executor.install_done
 	rm .executor.build_done
-
-.PHONY: oltp
-oltp: external-libs .oltp.install_done
-	# This is the main tree, so do not shortcut it
-	rm .oltp.install_done
-	rm .oltp.build_done
-
-htap: external-libs .htap.install_done
-	# This is the main tree, so do not shortcut it
-	rm .htap.install_done
-	rm .htap.build_done
 
 .PHONY: planner
 planner: avatica .planner.install_done
@@ -152,33 +141,7 @@ do-conf-executor: .executor.checkout_done external-libs
 		$(CMAKE) ${SRC_DIR}/executor \
 			-DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
 			-DSTANDALONE=OFF \
-			-DAEOLUS_SOURCE_DIR=${SRC_DIR}/oltp
-
-do-conf-oltp: .oltp.checkout_done external-libs
-	[ -d ${BUILD_DIR}/oltp ] || mkdir -p ${BUILD_DIR}/oltp
-	cd ${BUILD_DIR}/oltp && \
-		${COMMON_ENV} \
-		$(CMAKE) ${SRC_DIR}/oltp \
-			-DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
-			-DSTANDALONE=OFF \
-			-DPROTEUS_SOURCE_DIR=${SRC_DIR}/executor
-
-.htap.checkout_done:
-	@echo "-----------------------------------------------------------------------"
-	@echo "-- $$(echo $@ | sed -e 's,^[.],,' -e 's,_done,,')..."
-	@echo "-- $$(echo $@ | sed -e 's,^[.],,' -e 's,_done,,') done."
-	touch $@
-
-do-conf-htap: .htap.checkout_done external-libs
-	[ -d ${BUILD_DIR}/htap ] || mkdir -p ${BUILD_DIR}/htap
-	cd ${BUILD_DIR}/htap && \
-		${COMMON_ENV} \
-		$(CMAKE) ${SRC_DIR}/htap \
-			-DCMAKE_LIBRARY_PATH=${INSTALL_DIR}/lib \
-			-DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
-			-DSTANDALONE=OFF \
-			-DPROTEUS_SOURCE_DIR=${SRC_DIR}/executor \
-			-DAEOLUS_SOURCE_DIR=${SRC_DIR}/oltp
+			-DHTAP=ON 
 
 
 
@@ -220,7 +183,7 @@ do-checkout-rapidjson:
 #######################################################################
 
 .PHONY: clean
-clean: clean-executor clean-oltp clean-htap
+clean: clean-executor
 
 #######################################################################
 # Retrieve common definitions and targets.
