@@ -22,7 +22,7 @@ export CC CPP CXX
 endif
 
 # List of all the projects / repositories
-PROJECTS:= llvm glog gtest rapidjson executor avatica planner SQLPlanner
+PROJECTS:= llvm glog executor avatica planner SQLPlanner
 
 #FIXME: Currently coordinator.py depends on SQLPlanner to be build, and not planner.
 #	Also, it assumes a fixed folder layout, and execution from the src folder.
@@ -62,13 +62,7 @@ SQLPlanner: .SQLPlanner.build_done
 avatica: .avatica.install_done
 
 .PHONY: external-libs
-external-libs: llvm glog gtest rapidjson
-
-.PHONY: rapidjson
-rapidjson: llvm glog gtest .rapidjson.install_done
-
-.PHONY: gtest
-gtest: llvm glog .gtest.install_done
+external-libs: llvm glog
 
 .PHONY: glog
 glog: llvm .glog.install_done
@@ -76,13 +70,6 @@ glog: llvm .glog.install_done
 #######################################################################
 # Install targets
 #######################################################################
-
-do-install-gtest: .gtest.build_done
-	cd ${BUILD_DIR}/gtest/lib && \
-		cp *.a ${INSTALL_DIR}/lib && \
-		cp -r ${BUILD_DIR}/gtest/googletest/include/gtest \
-			${BUILD_DIR}/gtest/googlemock/include/gmock \
-			${INSTALL_DIR}/include
 
 do-install-planner: .planner.build_done
 	[ -d ${INSTALL_DIR}/bin ] || mkdir -p ${INSTALL_DIR}/bin
@@ -113,16 +100,6 @@ do-build-planner: .planner.checkout_done
 # Configure targets
 #######################################################################
 
-do-conf-gtest: .gtest.checkout_done llvm
-# Work around broken project
-	[ -d ${BUILD_DIR} ] || mkdir -p ${BUILD_DIR}
-	rm -rf ${BUILD_DIR}/gtest
-	cp -r ${BSD_DIR}/gtest ${BUILD_DIR}/gtest
-	cd ${BUILD_DIR}/gtest && rm -rf .git*
-	cd ${BUILD_DIR}/gtest && \
-		${COMMON_ENV} \
-		$(CMAKE) .
-
 do-conf-glog: .glog.checkout_done llvm
 # Work around broken project
 	[ -d ${BUILD_DIR} ] || mkdir -p ${BUILD_DIR}
@@ -140,24 +117,7 @@ do-conf-executor: .executor.checkout_done external-libs
 		${COMMON_ENV} \
 		$(CMAKE) ${SRC_DIR}/executor \
 			-DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
-			-DSTANDALONE=OFF \
-			-DHTAP=ON 
-
-
-
-# RapidJSON is a head-only library, but it will try to build documentation,
-# examples and unit-tests unless explicitly told not to do so.
-do-conf-rapidjson: .rapidjson.checkout_done llvm
-	[ -d ${BUILD_DIR}/rapidjson ] || mkdir -p ${BUILD_DIR}/rapidjson
-	cd ${BUILD_DIR}/rapidjson && \
-		${COMMON_ENV} \
-		$(CMAKE) ${MIT_DIR}/rapidjson/ \
-			-DRAPIDJSON_BUILD_DOC=OFF \
-			-DRAPIDJSON_BUILD_EXAMPLES=OFF \
-			-DRAPIDJSON_BUILD_TESTS=OFF \
-			-DRAPIDJSON_BUILD_CXX11=ON \
-			-DRAPIDJSON_HAS_CXX11_RVALUE_REFS=ON \
-			-DCMAKE_INSTALL_PREFIX=${INSTALL_DIR}
+			-DSTANDALONE=ON
 
 do-conf-SQLPlanner: .SQLPlanner.checkout_done
 	cd ${SRC_DIR}/SQLPlanner && sbt clean
@@ -170,13 +130,6 @@ do-conf-planner: .planner.checkout_done
 #######################################################################
 
 .PRECIOUS: ${BSD_DIR}/glog
-.PRECIOUS: ${BSD_DIR}/gtest
-.PRECIOUS: ${MIT_DIR}/rapidjson
-
-do-checkout-rapidjson:
-	git submodule update ${SHALLOW_LLVM_SUBMODULES} --init --recursive ${MIT_DIR}/rapidjson
-	# Local patch to fix empty statement error
-	cd ${MIT_DIR}/rapidjson && git apply ${PROJECT_DIR}/patches/0001-rapidjson-empty-statements.patch
 
 #######################################################################
 # Clean targets
