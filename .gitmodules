@@ -1,13 +1,3 @@
-[submodule "external/mit/rapidjson"]
-	path = external/mit/rapidjson
-	url = https://github.com/miloyip/rapidjson
-	ignore = dirty
-[submodule "external/bsd/gtest"]
-	path = external/bsd/gtest
-	url = https://github.com/google/googletest.git
-[submodule "external/bsd/glog"]
-	path = external/bsd/glog
-	url = https://github.com/google/glog.git
 [submodule "external/bsd/llvm-project"]
 	path = external/bsd/llvm-project
 	url = https://github.com/llvm/llvm-project

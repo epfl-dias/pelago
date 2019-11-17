@@ -22,7 +22,7 @@ export CC CPP CXX
 endif
 
 # List of all the projects / repositories
-PROJECTS:= llvm glog executor avatica planner SQLPlanner
+PROJECTS:= llvm executor avatica planner SQLPlanner
 
 #FIXME: Currently coordinator.py depends on SQLPlanner to be build, and not planner.
 #	Also, it assumes a fixed folder layout, and execution from the src folder.
@@ -62,10 +62,7 @@ SQLPlanner: .SQLPlanner.build_done
 avatica: .avatica.install_done
 
 .PHONY: external-libs
-external-libs: llvm glog
-
-.PHONY: glog
-glog: llvm .glog.install_done
+external-libs: llvm
 
 #######################################################################
 # Install targets
@@ -100,17 +97,6 @@ do-build-planner: .planner.checkout_done
 # Configure targets
 #######################################################################
 
-do-conf-glog: .glog.checkout_done llvm
-# Work around broken project
-	[ -d ${BUILD_DIR} ] || mkdir -p ${BUILD_DIR}
-	rm -rf ${BUILD_DIR}/glog
-	cp -r ${BSD_DIR}/glog ${BUILD_DIR}/glog
-	cd ${BUILD_DIR}/glog && rm -rf .git*
-	cd ${BUILD_DIR}/glog && autoreconf -fi .
-	cd ${BUILD_DIR}/glog && \
-		${COMMON_ENV} \
-		ac_cv_have_libgflags=0 ac_cv_lib_gflags_main=no ./configure --prefix ${INSTALL_DIR}
-
 do-conf-executor: .executor.checkout_done external-libs
 	[ -d ${BUILD_DIR}/executor ] || mkdir -p ${BUILD_DIR}/executor
 	cd ${BUILD_DIR}/executor && \
@@ -124,12 +110,6 @@ do-conf-SQLPlanner: .SQLPlanner.checkout_done
 
 do-conf-planner: .planner.checkout_done
 	[ -d ${SRC_DIR}/planner/target ] || mkdir -p ${SRC_DIR}/planner/target
-
-#######################################################################
-# Checkout sources as needed
-#######################################################################
-
-.PRECIOUS: ${BSD_DIR}/glog
 
 #######################################################################
 # Clean targets
