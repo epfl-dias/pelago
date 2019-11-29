@@ -22,11 +22,11 @@ export CC CPP CXX
 endif
 
 # List of all the projects / repositories
-PROJECTS:= llvm executor avatica planner SQLPlanner
+PROJECTS:= llvm executor avatica planner
 
 #FIXME: Currently coordinator.py depends on SQLPlanner to be build, and not planner.
 #	Also, it assumes a fixed folder layout, and execution from the src folder.
-all: llvm | .panorama.checkout_done executor planner SQLPlanner
+all: llvm | .panorama.checkout_done executor planner
 	@echo "-----------------------------------------------------------------------"
 	@echo ""
 
@@ -53,10 +53,6 @@ executor: external-libs .executor.install_done
 
 .PHONY: planner
 planner: avatica .planner.install_done
-
-# We don't install it, and just execute it from the source folder.
-.PHONY: SQLPlanner
-SQLPlanner: .SQLPlanner.build_done
 
 .PHONY: avatica
 avatica: .avatica.install_done
@@ -86,10 +82,6 @@ do-build-avatica do-conf-avatica:
 #######################################################################
 
 # There is no configure step, so depend directly on the checkout.
-do-build-SQLPlanner: .SQLPlanner.checkout_done
-	cd ${SRC_DIR}/SQLPlanner && sbt assembly
-
-# There is no configure step, so depend directly on the checkout.
 do-build-planner: .planner.checkout_done
 	cd ${SRC_DIR}/planner && sbt assembly
 
@@ -104,9 +96,6 @@ do-conf-executor: .executor.checkout_done external-libs
 		$(CMAKE) ${SRC_DIR}/executor \
 			-DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
 			-DSTANDALONE=ON
-
-do-conf-SQLPlanner: .SQLPlanner.checkout_done
-	cd ${SRC_DIR}/SQLPlanner && sbt clean
 
 do-conf-planner: .planner.checkout_done
 	[ -d ${SRC_DIR}/planner/target ] || mkdir -p ${SRC_DIR}/planner/target
