@@ -2,12 +2,12 @@ from __future__ import print_function
 
 from subprocess import *
 from sys import *
-import translator_scripts.json_to_proteus_plan as jsonplanner
+#import translator_scripts.json_to_proteus_plan as jsonplanner
 import os.path
 import readline
 import atexit
 import time
-import Queue
+import queue as Queue
 import threading
 import re
 import json
@@ -409,7 +409,7 @@ if __name__ == "__main__":
                         line = conn.recv(RECV_SIZE).decode().strip()
                         print(line)
                     else:
-                        line = raw_input('> ').strip()
+                        line = input('> ').strip()
                     is_test = re.sub('\s+', ' ', line.lower())                \
                                 .startswith(".create test ")
                     is_warmup = re.sub('\s+', ' ', line.lower())                \
@@ -438,7 +438,7 @@ if __name__ == "__main__":
                         # readline.remove_history_item(hlen - 1)
                         if not args.socket:
                             while ';' not in line:
-                                line = raw_input('>> ')
+                                line = input('>> ')
                                 bare_sql_input = bare_sql_input + "\n//     "
                                 bare_sql_input = bare_sql_input + line
                                 line = line.strip()
