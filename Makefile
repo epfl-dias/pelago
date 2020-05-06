@@ -70,7 +70,7 @@ do-install-planner: .planner.build_done
 
 do-install-avatica:
 	[ -d ${INSTALL_DIR}/lib ] || mkdir -p ${INSTALL_DIR}/lib
-	cd ${INSTALL_DIR}/lib && curl -O http://central.maven.org/maven2/org/apache/calcite/avatica/avatica/1.13.0/avatica-1.13.0.jar
+	cd ${INSTALL_DIR}/lib && curl -O https://repo1.maven.org/maven2/org/apache/calcite/avatica/avatica/1.13.0/avatica-1.13.0.jar
 
 # As we just download the binary, there is no point in checking for all
 # the preceding steps.
