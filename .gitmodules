@@ -6,15 +6,9 @@
 [submodule "proteus"]
 	path = src/executor
 	url = ../proteus.git
-[submodule "clotho"]
-	path = src/planner
-	url = ../clotho.git
 [submodule "panorama"]
 	path = src/panorama
 	url = ../panorama.git
-[submodule "deprecated-planner"]
-	path = src/SQLPlanner
-	url = ../clotho.git
 [submodule "frontends/R"]
 	path = src/frontends/R
 	url = ../ViDaR.git

@@ -22,17 +22,15 @@ export CC CPP CXX
 endif
 
 # List of all the projects / repositories
-PROJECTS:= llvm executor avatica planner
+PROJECTS:= llvm executor avatica
 
-#FIXME: Currently coordinator.py depends on SQLPlanner to be build, and not planner.
-#	Also, it assumes a fixed folder layout, and execution from the src folder.
-all: llvm | .panorama.checkout_done executor planner
+all: llvm | .panorama.checkout_done executor
 	@echo "-----------------------------------------------------------------------"
 	@echo ""
 
 run-server: all
 	cd ${INSTALL_DIR}/pelago && \
-		java -jar ${INSTALL_DIR}/bin/clotho-*.jar \
+		java -jar ${INSTALL_DIR}/lib/clotho.jar \
 			--server inputs/plans/schema.json
 
 run-client: avatica
@@ -51,9 +49,6 @@ executor: external-libs .executor.install_done
 	rm .executor.install_done
 	rm .executor.build_done
 
-.PHONY: planner
-planner: avatica .planner.install_done
-
 .PHONY: avatica
 avatica: .avatica.install_done
 
@@ -64,10 +59,6 @@ external-libs: llvm
 # Install targets
 #######################################################################
 
-do-install-planner: .planner.build_done
-	[ -d ${INSTALL_DIR}/bin ] || mkdir -p ${INSTALL_DIR}/bin
-	cp ${SRC_DIR}/planner/target/scala-*/clotho-*.jar ${INSTALL_DIR}/bin/
-
 do-install-avatica:
 	[ -d ${INSTALL_DIR}/lib ] || mkdir -p ${INSTALL_DIR}/lib
 	cd ${INSTALL_DIR}/lib && curl -O https://repo1.maven.org/maven2/org/apache/calcite/avatica/avatica/1.13.0/avatica-1.13.0.jar
@@ -76,14 +67,6 @@ do-install-avatica:
 # the preceding steps.
 do-build-avatica do-conf-avatica:
 	true
-
-#######################################################################
-# Build targets
-#######################################################################
-
-# There is no configure step, so depend directly on the checkout.
-do-build-planner: .planner.checkout_done
-	cd ${SRC_DIR}/planner && sbt assembly
 
 #######################################################################
 # Configure targets
@@ -96,9 +79,6 @@ do-conf-executor: .executor.checkout_done external-libs
 		$(CMAKE) ${SRC_DIR}/executor \
 			-DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
 			-DSTANDALONE=ON
-
-do-conf-planner: .planner.checkout_done
-	[ -d ${SRC_DIR}/planner/target ] || mkdir -p ${SRC_DIR}/planner/target
 
 #######################################################################
 # Clean targets
