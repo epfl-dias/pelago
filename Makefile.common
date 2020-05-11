@@ -197,7 +197,6 @@ do-checkout-llvm:
 	# modules, so stickying to this method.
 	git submodule update ${SHALLOW_LLVM_SUBMODULES} --init --recursive \
 		${BSD_DIR}/llvm-project
-	cd ${BSD_DIR}/llvm-project && git apply ${PROJECT_DIR}/patches/0001-llvm.patch
 
 #######################################################################
 # Clean targets
@@ -219,7 +218,7 @@ help:
 	@echo " 			number of jobs and other tunable options."
 	@echo " * clean 		Remove trireme object files and binaries."
 	@echo " * dist-clean		Cleans the repository to a pristine state,"
-	@echo " 			just like after a new clone of the sources."
+	@echo " 			just like after a new clone of the sources."    
 	@echo "-----------------------------------------------------------------------"
 	@echo " In the following targets, '%' can be replaced by one of the external"
 	@echo " project among the following list:"
