@@ -9,15 +9,13 @@
 TRIPLE := $$(${CC} -v 2>&1 | grep "^Target:" | cut -d ' ' -f 2 | \
 		awk -F- '{print $$1,$$(NF-1),$$NF}' | tr ' ' '-')
 
-_CPPFLAGS := ${CPPFLAGS} -isystem /usr/include/${TRIPLE}
+_CPPFLAGS := ${CPPFLAGS}
+
 _CFLAGS := ${CFLAGS} ${_CPPFLAGS}
 
-_CXXFLAGS := ${CXXFLAGS} -nostdinc++ \
-	-isysroot ${INSTALL_DIR} \
-	-isystem ${INSTALL_DIR}/include/c++/v1 \
-	-isystem /usr/include/${TRIPLE}
-
-_LDFLAGS := ${LDFLAGS} -stdlib=libc++ \
+_CXXFLAGS := ${CXXFLAGS}
+	
+_LDFLAGS := ${LDFLAGS} \
 	-L${INSTALL_DIR}/lib \
 	-Wl,-rpath,${INSTALL_DIR}/lib
 
