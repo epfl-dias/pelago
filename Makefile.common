@@ -195,6 +195,7 @@ do-checkout-llvm:
 	# modules, so stickying to this method.
 	git submodule update ${SHALLOW_LLVM_SUBMODULES} --init --recursive \
 		${BSD_DIR}/llvm-project
+	cd ${BSD_DIR}/llvm-project && git apply ${PROJECT_DIR}/patches/0000-llvm.patch
 
 #######################################################################
 # Clean targets

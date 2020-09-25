@@ -1,0 +1,13 @@
+diff --git a/clang/lib/Driver/ToolChains/Cuda.cpp b/clang/lib/Driver/ToolChains/Cuda.cpp
+index 110a0bca9bc..59d8b64c2c1 100644
+--- a/clang/lib/Driver/ToolChains/Cuda.cpp
++++ b/clang/lib/Driver/ToolChains/Cuda.cpp
+@@ -157,7 +157,7 @@ CudaInstallationDetector::CudaInstallationDetector(
+     if (!VersionFile) {
+       // CUDA 7.0 doesn't have a version.txt, so guess that's our version if
+       // version.txt isn't present.
+-      Version = CudaVersion::CUDA_70;
++      Version = CudaVersion::LATEST;
+     } else {
+       ParseCudaVersionFile((*VersionFile)->getBuffer());
+     }
