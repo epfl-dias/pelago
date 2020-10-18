@@ -10,7 +10,7 @@ MIT_DIR		?= ${EXTERNAL_DIR}/mit
 INSTALL_DIR	?= ${PROJECT_DIR}/opt
 BUILD_DIR	?= ${PROJECT_DIR}/build
 
-CMAKE		?= cmake
+CMAKE		?= ${INSTALL_DIR}/bin/cmake
 
 # If clang is found, we prefer it, to build our own clang.
 ifeq ($(shell if command -v clang 1> /dev/null; then echo clang; else echo ""; fi),clang)
@@ -22,9 +22,9 @@ export CC CPP CXX
 endif
 
 # List of all the projects / repositories
-PROJECTS:= llvm executor avatica
+PROJECTS:= cmake llvm executor avatica
 
-all: llvm | .panorama.checkout_done executor
+all: cmake llvm | .panorama.checkout_done executor
 	@echo "-----------------------------------------------------------------------"
 	@echo ""
 
@@ -53,7 +53,7 @@ executor: external-libs .executor.install_done
 avatica: .avatica.install_done
 
 .PHONY: external-libs
-external-libs: llvm
+external-libs: cmake llvm
 
 #######################################################################
 # Install targets

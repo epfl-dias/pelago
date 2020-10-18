@@ -12,3 +12,6 @@
 [submodule "frontends/R"]
 	path = src/frontends/R
 	url = ../ViDaR.git
+[submodule "external/bsd/cmake"]
+	path = external/bsd/cmake
+	url = https://gitlab.kitware.com/cmake/cmake.git
