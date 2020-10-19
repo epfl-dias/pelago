@@ -1,7 +1,6 @@
 [submodule "external/bsd/llvm-project"]
 	path = external/bsd/llvm-project
 	url = https://github.com/llvm/llvm-project
-	branch = release_80
 	ignore = dirty
 [submodule "proteus"]
 	path = src/executor
@@ -15,3 +14,4 @@
 [submodule "external/bsd/cmake"]
 	path = external/bsd/cmake
 	url = https://gitlab.kitware.com/cmake/cmake.git
+	ignore = dirty
