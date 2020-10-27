@@ -76,7 +76,7 @@ do-conf-executor: .executor.checkout_done external-libs
 	[ -d ${BUILD_DIR}/executor ] || mkdir -p ${BUILD_DIR}/executor
 	cd ${BUILD_DIR}/executor && \
 		${COMMON_ENV} \
-		$(CMAKE) ${SRC_DIR}/executor \
+		${CMAKE} ${SRC_DIR}/executor \
 			-DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
 			-DSTANDALONE=ON
 
