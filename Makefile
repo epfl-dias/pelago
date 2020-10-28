@@ -11,6 +11,7 @@ INSTALL_DIR	?= ${PROJECT_DIR}/opt
 BUILD_DIR	?= ${PROJECT_DIR}/build
 
 CMAKE		?= ${INSTALL_DIR}/bin/cmake
+CPACK		?= ${INSTALL_DIR}/bin/cpack
 
 # If clang is found, we prefer it, to build our own clang.
 ifeq ($(shell if command -v clang 1> /dev/null; then echo clang; else echo ""; fi),clang)
@@ -54,6 +55,18 @@ avatica: .avatica.install_done
 
 .PHONY: external-libs
 external-libs: cmake llvm
+
+#######################################################################
+# Package targets
+#######################################################################
+
+.PHONY: do-package-llvm
+do-package-llvm: .llvm.install_done
+	cd ${LLVM_BUILD_STAGE2} && \
+		${COMMON_ENV} ${CPACK} \
+			-G "DEB;TXZ" \
+			-D CPACK_DEBIAN_PACKAGE_SHLIBDEPS=ON \
+			-D CPACK_PACKAGE_CONTACT=${CPACK_PACKAGE_CONTACT}
 
 #######################################################################
 # Install targets

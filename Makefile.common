@@ -260,6 +260,7 @@ help:
 	@echo " * dist-clean-%		Removes everything from project '%', forcing a"
 	@echo " 			build from scratch of '%'."
 	@echo " * clean-%		Removes the object files of '%'"
+	@echo " * package-%		Generate a package for '%'"
 	@echo " * install-%		Install '%' in INSTALL_DIR"
 	@echo " * build-%		Build '%' in BUILD_DIR"
 	@echo " * configure-%		Configure '%'"
@@ -292,6 +293,11 @@ dist-clean:
 	@echo "-- dist-clean done."
 
 %: .%.install_done
+
+.PHONY: package-%
+package-%:
+	-rm -f .$$(echo $@ | sed -e 's,package-,,').package_done
+	make   .$$(echo $@ | sed -e 's,package-,,').package_done
 
 .PHONY: install-%
 install-%:
@@ -328,6 +334,11 @@ clean-%:
 	-rm -rf  ${BUILD_DIR}/$$(echo $@ | sed -e 's,clean-,,')
 	@echo "-- $$(echo $@ | sed -e 's,^clean-,,') clean done."
 
+.PHONY: do-package-%
+do-package-%: .%.install_done
+	cd ${BUILD_DIR}/$$(echo $@ | sed -e 's,do-package-,,') && \
+		${COMMON_ENV} ${CPACK} -G "DEB;TXZ"
+
 .PHONY: do-install-%
 do-install-%: .%.build_done
 	[ -d ${INSTALL_DIR} ] || mkdir -p ${INSTALL_DIR}
@@ -346,6 +357,14 @@ do-build-%: .%.configure_done
 do-checkout-%:
 	git submodule update ${SHALLOW_LLVM_SUBMODULES} --init --recursive \
 		$$(git submodule status | grep $$(echo $@ | sed -e 's,do-checkout-,,') | cut -d ' ' -f 3)
+
+.PRECIOUS: .%.package_done
+.%.package_done: .%.install_done
+	@echo "-----------------------------------------------------------------------"
+	@echo "-- $$(echo $@ | sed -e 's,^[.],,' -e 's,_done,,')..."
+	make do-package-$$(echo $@ | sed -e 's,^[.],,' -e 's,.package_done,,')
+	@echo "-- $$(echo $@ | sed -e 's,^[.],,' -e 's,_done,,') done."
+	touch $@
 
 .PRECIOUS: .%.install_done
 .%.install_done: .%.build_done
