@@ -29,15 +29,13 @@ COMMON_ENV := \
 	CXXFLAGS="${_CXXFLAGS}" \
 	LDFLAGS="${_LDFLAGS}"
 
-
 # LLVM Bootstrapping
 LLVM_BUILD_STAGE0 := ${BUILD_DIR}/llvm-stage0
 LLVM_BUILD_STAGE1 := ${BUILD_DIR}/llvm-stage1
 LLVM_BUILD_STAGE2 := ${BUILD_DIR}/llvm-stage2
 
-LLVM_INSTALL_STAGE0 := ${INSTALL_DIR}
-LLVM_INSTALL_STAGE1 := ${INSTALL_DIR}
-LLVM_INSTALL_STAGE2 := ${INSTALL_DIR}
+LLVM_INSTALL_STAGE0 := ${BUILD_DIR}/llvm-stage0/opt
+LLVM_INSTALL_STAGE1 := ${BUILD_DIR}/llvm-stage1/opt
 
 # We use export as we want to make sure the following goes to subshells auto-
 # matically, which does not seem to happen properly just through the CMAKE
@@ -55,7 +53,6 @@ LLVM_CMAKE_COMMON := \
 	-DLLVM_ENABLE_PROJECTS="clang;clang-tools-extra;libcxx;libcxxabi;libunwind;compiler-rt" \
 	-DBUILD_SHARED_LIBS=ON \
 	-DC_INCLUDE_DIRS=/usr/include/${TRIPLE}:/usr/include \
-	-DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
 	-DLLVM_DEFAULT_TARGET_TRIPLE=${TRIPLE} \
 	-DLLVM_REQUIRES_RTTI=ON \
 	-DLLVM_TOOL_LLDB_BUILD=OFF
@@ -76,6 +73,7 @@ LLVM_CMAKE_COMMON_1_2 := \
 LLVM_CMAKE_STAGE0 := \
 	${LLVM_CMAKE_COMMON} \
 	${LLVM_CMAKE_COMMON_0_1} \
+	-DCMAKE_INSTALL_PREFIX=${LLVM_INSTALL_STAGE0} \
 	-DLLVM_TOOL_COMPILER_RT_BUILD=OFF \
 	-DLLVM_TOOL_LIBCXX_BUILD=OFF \
 	-DLLVM_TOOL_LIBCXXABI_BUILD=OFF
@@ -83,7 +81,8 @@ LLVM_CMAKE_STAGE0 := \
 LLVM_CMAKE_STAGE1 := \
 	${LLVM_CMAKE_COMMON} \
 	${LLVM_CMAKE_COMMON_0_1} \
-	${LLVM_CMAKE_COMMON_1_2}
+	${LLVM_CMAKE_COMMON_1_2} \
+	-DCMAKE_INSTALL_PREFIX=${LLVM_INSTALL_STAGE1}
 
 # LLVM_ENABLE_EH: required for throwing exceptions
 # LLVM_ENABLE_RTTI: required for dynamic_cast
@@ -91,6 +90,7 @@ LLVM_CMAKE_STAGE2 := \
 	${LLVM_CMAKE_COMMON} \
 	${LLVM_CMAKE_COMMON_1_2} \
 	-DCMAKE_BUILD_TYPE=RelWithDebInfo \
+	-DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
 	-DLLVM_ENABLE_ASSERTIONS=ON \
 	-DLLVM_ENABLE_EH=ON \
 	-DLLVM_ENABLE_LIBCXX=ON \
@@ -112,7 +112,7 @@ cmake: .cmake.install_done
 # Install targets
 #######################################################################
 do-install-llvm: .llvm.build_done
-	[ -d ${LLVM_INSTALL_STAGE2} ] || mkdir -p ${LLVM_INSTALL_STAGE2}
+	[ -d ${INSTALL_DIR} ] || mkdir -p ${INSTALL_DIR}
 	( \
 		unset CFLAGS CXXFLAGS CPPFLAGS LDFLAGS LD_LIBRARY_PATH DYLD_LIBRARY_PATH; \
 		eval ${LLVM_ENV} \
