@@ -24,7 +24,7 @@ endif
 # List of all the projects / repositories
 PROJECTS:= cmake llvm executor avatica
 
-all: cmake llvm | .panorama.checkout_done executor
+all: cmake llvm | executor
 	@echo "-----------------------------------------------------------------------"
 	@echo ""
 
