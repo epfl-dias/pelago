@@ -50,10 +50,10 @@ LLVM_ENV := \
 
 # Flags shared between all stages
 LLVM_CMAKE_COMMON := \
+	-DLLVM_ENABLE_PROJECTS="clang;clang-tools-extra;libcxx;libcxxabi;libunwind;compiler-rt;mlir" \
 	-DC_INCLUDE_DIRS=/usr/include/${TRIPLE}:/usr/include \
 	-DCMAKE_BUILD_TYPE=Release \
 	-DLLVM_DEFAULT_TARGET_TRIPLE=${TRIPLE} \
-	-DLLVM_ENABLE_PROJECTS="clang;clang-tools-extra;libcxx;libcxxabi;libunwind;compiler-rt" \
 	-DLLVM_BUILD_DOCS=OFF \
 	-DLLVM_INCLUDE_EXAMPLES=OFF \
 	-DLLVM_TOOL_LLDB_BUILD=OFF \
@@ -61,6 +61,7 @@ LLVM_CMAKE_COMMON := \
 
 # Flags shared between stage 0 & 1
 LLVM_CMAKE_COMMON_0_1 := \
+        -DLLVM_ENABLE_PROJECTS="clang;clang-tools-extra;libcxx;libcxxabi;libunwind;compiler-rt" \
 	-DLLVM_INSTALL_TOOLCHAIN_ONLY=ON \
 	-DLLVM_TARGETS_TO_BUILD=host
 
@@ -92,6 +93,7 @@ LLVM_CMAKE_STAGE1 := \
 LLVM_CMAKE_STAGE2 := \
 	${LLVM_CMAKE_COMMON} \
 	${LLVM_CMAKE_COMMON_1_2} \
+	-DLLVM_ENABLE_PROJECTS="clang;clang-tools-extra;libcxx;libcxxabi;libunwind;compiler-rt;mlir" \
 	-DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
 	-DLLVM_TARGETS_TO_BUILD="host;NVPTX" \
 	-DLLVM_USE_INTEL_JITEVENTS=ON \
@@ -192,7 +194,7 @@ do-conf-cmake: .cmake.checkout_done
 
 .llvm.bootstrap_stage0_done: .llvm.checkout_done .cmake.install_done
 	# In case we do not have any clang around
-	${CXX} --version | grep -q clang || ( \
+	( \
 		[ -d ${LLVM_BUILD_STAGE0} ] || mkdir -p ${LLVM_BUILD_STAGE0}; \
 		unset CFLAGS CXXFLAGS CPPFLAGS LDFLAGS LD_LIBRARY_PATH DYLD_LIBRARY_PATH; \
 		export CC="${CC}" CPP="${CPP}" CXX="${CXX}"; \
@@ -221,7 +223,7 @@ do-checkout-llvm:
 	# modules, so stickying to this method.
 	git submodule update ${SHALLOW_LLVM_SUBMODULES} --init --recursive \
 		${BSD_DIR}/llvm-project
-	cd ${BSD_DIR}/llvm-project && git apply ${PROJECT_DIR}/patches/0000-llvm.patch
+	# cd ${BSD_DIR}/llvm-project && git apply ${PROJECT_DIR}/patches/0000-llvm.patch
 
 
 do-checkout-cmake:
