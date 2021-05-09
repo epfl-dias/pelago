@@ -144,9 +144,12 @@ after_script:
 build-tools:
  stage: Build Tools
  script:
+  - ccache_dir=$(pwd | sed "s/^\/builds/\/cache/g")/.ccache
   - git config --global user.name "Pelago CI"
   - git config --global user.email ""
-  - make llvm &> llvm_build_log.txt || (tail -c 512k llvm_build_log.txt && exit 1)
+  - CCACHE_DIR=${ccache_dir} ccache --zero-stats
+  - CCACHE_DIR=${ccache_dir} CCACHE_NOHASHDIR=1 CCACHE_BASEDIR=$(pwd) make llvm &> llvm_build_log.txt || (tail -c 512k llvm_build_log.txt && exit 1)
+  - CCACHE_DIR=${ccache_dir} ccache --show-stats
   - echo "Building tools... done"
  <<: *cache
  <<: *restrict_precommit
