@@ -194,7 +194,7 @@ do-conf-cmake: .cmake.checkout_done
 
 .llvm.bootstrap_stage0_done: .llvm.checkout_done .cmake.install_done
 	# In case we do not have any clang around
-	( \
+	${CXX} --version | grep -q clang || ( \
 		[ -d ${LLVM_BUILD_STAGE0} ] || mkdir -p ${LLVM_BUILD_STAGE0}; \
 		unset CFLAGS CXXFLAGS CPPFLAGS LDFLAGS LD_LIBRARY_PATH DYLD_LIBRARY_PATH; \
 		export CC="${CC}" CPP="${CPP}" CXX="${CXX}"; \
