@@ -45,8 +45,8 @@ before_script:
  - ln -s ${cache_path}/opt opt
  - cp -p -t . ${cache_path}/.*done || true
  # TODO: we should probably remove the next lines and fix that in executor
- - ln -s /data/ssbm100 src/executor/inputs/ssbm100
- - ln -s /data/tpch1 src/executor/inputs/tpch1
+ - ln -s /data/ssbm100 src/executor/tests/inputs/ssbm100
+ - ln -s /data/tpch1 src/executor/tests/inputs/tpch1
 
 after_script:
  # we have to recalculate cache_path here
