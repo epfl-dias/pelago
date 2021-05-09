@@ -61,12 +61,6 @@ external-libs: cmake llvm
 #######################################################################
 
 .PHONY: do-package-llvm
-do-package-llvm: .llvm.install_done
-	cd ${LLVM_BUILD_STAGE2} && \
-		${COMMON_ENV} ${CPACK} \
-			-G "DEB;TXZ" \
-			-D CPACK_DEBIAN_PACKAGE_SHLIBDEPS=ON \
-			-D CPACK_PACKAGE_CONTACT=${CPACK_PACKAGE_CONTACT}
 
 #######################################################################
 # Install targets

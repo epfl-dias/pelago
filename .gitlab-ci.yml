@@ -1,6 +1,6 @@
 #############################################################################
 # gitlab-runner:docker executor options
-image: chapeiro/pelago-build:cuda10.2-llvm10
+image: chapeiro/pelago-build:cuda11.1-llvm11
 # - Add support for docker-in-docker tests / build processes
 
 #############################################################################
@@ -15,6 +15,10 @@ stages:
  - Check Out            # When extra steps are needed to checkout the sources
 
  - Build Tools          # When extra tools are required
+
+ - Package Build Tools  # Build & upload build requirements to registry
+ 
+ - Builder Build Container # Builder image with proteus dependencies
 
  - Build Libraries      # When extra libraries are required 
 
@@ -148,9 +152,44 @@ build-tools:
   - git config --global user.name "Pelago CI"
   - git config --global user.email ""
   - CCACHE_DIR=${ccache_dir} ccache --zero-stats
-  - CCACHE_DIR=${ccache_dir} CCACHE_NOHASHDIR=1 CCACHE_BASEDIR=$(pwd) make llvm &> llvm_build_log.txt || (tail -c 512k llvm_build_log.txt && exit 1)
+  - CCACHE_DIR=${ccache_dir} CCACHE_NOHASHDIR=1 CCACHE_BASEDIR=$(pwd) CPACK_PACKAGE_CONTACT=dias-ci@epfl.ch make llvm &> llvm_build_log.txt || (tail -c 512k llvm_build_log.txt && exit 1)
   - CCACHE_DIR=${ccache_dir} ccache --show-stats
   - echo "Building tools... done"
+ <<: *cache
+ <<: *restrict_precommit
+
+package-build-tools-llvm:
+ stage: Package Build Tools
+ script:
+  - ccache_dir=$(pwd | sed "s/^\/builds/\/cache/g")/.ccache
+  - CCACHE_DIR=${ccache_dir} ccache --zero-stats
+  - CCACHE_DIR=${ccache_dir} CCACHE_NOHASHDIR=1 CCACHE_BASEDIR=$(pwd) CPACK_PACKAGE_CONTACT=dias-ci@epfl.ch make do-package-llvm
+  - CCACHE_DIR=${ccache_dir} ccache --show-stats
+  - 'curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file build/llvm-stage2/LLVM-12.0.0-Linux.deb "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/LLVM/12.0.0/LLVM-12.0.0-Linux.deb"'
+  - 'curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file build/llvm-stage2/LLVM-12.0.0-Linux.tar.xz "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/LLVM/12.0.0/LLVM-12.0.0-Linux.tar.xz"'
+ <<: *cache
+ <<: *restrict_precommit
+
+package-build-tools-cmake:
+ stage: Package Build Tools
+ script:
+  - ccache_dir=$(pwd | sed "s/^\/builds/\/cache/g")/.ccache
+  - CCACHE_DIR=${ccache_dir} ccache --zero-stats
+  - CCACHE_DIR=${ccache_dir} CCACHE_NOHASHDIR=1 CCACHE_BASEDIR=$(pwd) CPACK_PACKAGE_CONTACT=dias-ci@epfl.ch make do-package-cmake
+  - CCACHE_DIR=${ccache_dir} ccache --show-stats
+  - 'curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file build/cmake/cmake-3.20.2-Linux-x86_64.deb "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/cmake/3.20.2/cmake-3.20.2-Linux-x86_64.deb"'
+  - 'curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file build/cmake/cmake-3.20.2-Linux-x86_64.tar.xz "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/cmake/3.20.2/cmake-3.20.2-Linux-x86_64.tar.xz"'
+ <<: *cache
+ <<: *restrict_precommit
+
+build-dependencies-container:
+ image: docker:19.03.12
+ stage: Builder Build Container
+ script:
+  - cp build/llvm-stage2/LLVM-12.0.0-Linux.deb src/executor/tools/docker/proteus-build/
+  # localhost as we use the parent docker
+  - cd src/executor/tools/docker/proteus-build && docker build -t localhost:5055/proteus/pelago-build:latest .
+  - docker push localhost:5055/proteus/pelago-build:latest
  <<: *cache
  <<: *restrict_precommit
 

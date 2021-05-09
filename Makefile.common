@@ -23,6 +23,7 @@ CCACHE ?= $(shell if command -v ccache 1> /dev/null; then echo ON; else echo OFF
 
 COMMON_ENV := \
 	PATH=${INSTALL_DIR}/bin:${PATH} \
+	LD_LIBRARY_PATH=${INSTALL_DIR}/lib:${LD_LIBRARY_PATH} \
 	CC=${INSTALL_DIR}/bin/clang \
 	CXX=${INSTALL_DIR}/bin/clang++ \
 	CPP=${INSTALL_DIR}/bin/clang\ -E \
@@ -35,6 +36,8 @@ COMMON_ENV := \
 LLVM_BUILD_STAGE0 := ${BUILD_DIR}/llvm-stage0
 LLVM_BUILD_STAGE1 := ${BUILD_DIR}/llvm-stage1
 LLVM_BUILD_STAGE2 := ${BUILD_DIR}/llvm-stage2
+
+CMAKE_BUILD := ${BUILD_DIR}/cmake
 
 LLVM_INSTALL_STAGE0 := ${BUILD_DIR}/llvm-stage0/opt
 LLVM_INSTALL_STAGE1 := ${BUILD_DIR}/llvm-stage1/opt
@@ -121,7 +124,12 @@ LLVM_CMAKE_STAGE2 := \
 	-DLLVM_ENABLE_PIC=ON \
 	-DLLVM_ENABLE_LIBCXX=ON \
 	-DLIBCXX_ENABLE_EXCEPTIONS=ON \
-	-DLIBCXX_ENABLE_RTTI=ON
+	-DLIBCXX_ENABLE_RTTI=ON \
+	-DCPACK_THREADS=0 \
+	-DCPACK_ARCHIVE_THREADS=0 \
+	-DCPACK_PACKAGE_CONTACT="${CPACK_PACKAGE_CONTACT}" \
+	-DCPACK_GENERATOR="DEB;TXZ" \
+	-DCPACK_DEBIAN_PACKAGE_SHLIBDEPS=ON
 
 #######################################################################
 # top-level targets, checks if a call to make is required before
@@ -130,6 +138,24 @@ LLVM_CMAKE_STAGE2 := \
 .PHONY: llvm
 llvm: .llvm.install_done
 cmake: .cmake.install_done
+
+#######################################################################
+# Package targets
+#######################################################################
+do-package-llvm: .llvm.install_done
+	[ -d ${INSTALL_DIR} ] || mkdir -p ${INSTALL_DIR}
+	( \
+		unset CFLAGS CXXFLAGS CPPFLAGS LDFLAGS LD_LIBRARY_PATH DYLD_LIBRARY_PATH; \
+		eval ${LLVM_ENV} \
+		cd ${LLVM_BUILD_STAGE2}; \
+		make -j ${JOBS} package; \
+	)
+
+do-package-cmake: .cmake.install_done
+	( \
+		cd ${CMAKE_BUILD}; \
+		make -j ${JOBS} package \
+	)
 
 #######################################################################
 # Install targets
@@ -145,10 +171,9 @@ do-install-llvm: .llvm.build_done
 
 do-install-cmake: .cmake.build_done
 	( \
-		cd ${BSD_DIR}/cmake/; \
-		make install \
+		cd ${CMAKE_BUILD}; \
+		make -j ${JOBS} install \
 	)
-	touch .cmake.install_done
 
 #######################################################################
 # Build targets
@@ -163,10 +188,9 @@ do-build-llvm: .llvm.configure_done
 
 do-build-cmake: .cmake.configure_done
 	( \
-		cd ${BSD_DIR}/cmake/; \
+		cd ${CMAKE_BUILD}; \
 		make -j ${JOBS} \
 	)
-	touch .cmake.build_done
 
 #######################################################################
 # Configure targets
@@ -183,10 +207,11 @@ do-conf-llvm: .llvm.bootstrap_stage1_done
 
 do-conf-cmake: .cmake.checkout_done
 	( \
-		cd ${BSD_DIR}/cmake/; \
-		./bootstrap --prefix=${INSTALL_DIR} --parallel=${JOBS} -- -DCMAKE_USE_OPENSSL=OFF\
+		[ -d ${CMAKE_BUILD} ] || mkdir -p ${CMAKE_BUILD}; \
+		cd ${CMAKE_BUILD}; \
+		${BSD_DIR}/cmake/bootstrap --prefix=${INSTALL_DIR} --parallel=${JOBS} \
+			-- -DCMAKE_USE_OPENSSL=OFF -DCPACK_GENERATOR="DEB;TXZ" \
 	)
-	touch .cmake.configure_done
 
 #######################################################################
 # Bootstrap LLVM so that it links itself against libc++
