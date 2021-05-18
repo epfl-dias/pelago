@@ -187,6 +187,7 @@ build-dependencies-container:
  stage: Builder Build Container
  script:
   - cp build/llvm-stage2/LLVM-12.0.0-Linux.deb src/executor/tools/docker/proteus-build/
+  - cp build/cmake/cmake-3.20.2-Linux-x86_64.deb src/executor/tools/docker/proteus-build/
   # localhost as we use the parent docker
   - cd src/executor/tools/docker/proteus-build && docker build -t localhost:5055/proteus/pelago-build:latest .
   - docker push localhost:5055/proteus/pelago-build:latest
