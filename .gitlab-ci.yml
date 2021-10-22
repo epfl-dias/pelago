@@ -47,7 +47,7 @@ before_script:
  - mkdir -p ${cache_path}/build ${cache_path}/opt
  - ln -s ${cache_path}/build build
  - ln -s ${cache_path}/opt opt
- - cp -p -t . ${cache_path}/.*done || true
+ - cp -p ${cache_path}/.*done ./ || true
  # TODO: we should probably remove the next lines and fix that in executor
  - ln -s /data/ssbm100 src/executor/tests/inputs/ssbm100
  - ln -s /data/tpch1 src/executor/tests/inputs/tpch1
@@ -55,7 +55,7 @@ before_script:
 after_script:
  # we have to recalculate cache_path here
  - cache_path=$(pwd | sed "s/^\/builds/\/cache/g")/${CI_COMMIT_REF_SLUG}-${CI_COMMIT_SHA}
- - cp -p -t ${cache_path} .*done || true
+ - cp -p .*done ${cache_path}/ || true
 
 #----------------------------------------------------------------------------
 # Caching policies templates
