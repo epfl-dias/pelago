@@ -189,7 +189,7 @@ build-dependencies-container:
   - cp build/llvm-stage2/LLVM-13.0.0-Linux.deb src/executor/tools/docker/proteus-build/
   - cp build/cmake/cmake-3.20.2-Linux-x86_64.deb src/executor/tools/docker/proteus-build/
   # localhost as we use the parent docker
-  - cd src/executor/tools/docker/proteus-build && docker build -t localhost:5055/proteus/pelago-build:latest .
+  - cd src/executor/tools/docker/proteus-build && docker build -t localhost:5055/proteus/pelago-build:latest --build-arg LLVM_VERSION=13.0.0 .
   - docker push localhost:5055/proteus/pelago-build:latest
  <<: *cache
  <<: *restrict_precommit
