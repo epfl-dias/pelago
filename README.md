@@ -6,7 +6,7 @@ The list of Ubuntu 18.04 required packages is in src/docker/pelago-build/require
 
  * Ubuntu 18.04 LTS
  * GNU Make
- * Git (to checkout this project and dependencies)
+ * Git >= 2.17 (to checkout this project and dependencies)
  * curl (to download avatica)
  * sqlline (for the interactive client)
 
