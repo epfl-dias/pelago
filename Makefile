@@ -7,6 +7,7 @@ SRC_DIR		?= ${PROJECT_DIR}/src
 EXTERNAL_DIR	?= ${PROJECT_DIR}/external
 BSD_DIR		?= ${EXTERNAL_DIR}/bsd
 MIT_DIR		?= ${EXTERNAL_DIR}/mit
+APACHE_DIR      ?= ${EXTERNAL_DIR}/apache
 INSTALL_DIR	?= ${PROJECT_DIR}/opt
 BUILD_DIR	?= ${PROJECT_DIR}/build
 

@@ -9,3 +9,6 @@
 	path = external/bsd/cmake
 	url = https://gitlab.kitware.com/cmake/cmake.git
 	ignore = dirty
+[submodule "external/apache/openssl"]
+	path = external/apache/openssl
+	url = https://github.com/openssl/openssl

@@ -38,6 +38,7 @@ LLVM_BUILD_STAGE1 := ${BUILD_DIR}/llvm-stage1
 LLVM_BUILD_STAGE2 := ${BUILD_DIR}/llvm-stage2
 
 CMAKE_BUILD := ${BUILD_DIR}/cmake
+OPENSSL_BUILD := ${BUILD_DIR}/openssl
 
 LLVM_INSTALL_STAGE0 := ${BUILD_DIR}/llvm-stage0/opt
 LLVM_INSTALL_STAGE1 := ${BUILD_DIR}/llvm-stage1/opt
@@ -176,6 +177,12 @@ do-install-cmake: .cmake.build_done
 		make -j ${JOBS} install \
 	)
 
+do-install-openssl: .openssl.build_done
+	( \
+		cd ${OPENSSL_BUILD}; \
+		make -j ${JOBS} install \
+	)
+
 #######################################################################
 # Build targets
 #######################################################################
@@ -193,6 +200,12 @@ do-build-cmake: .cmake.configure_done
 		make -j ${JOBS} \
 	)
 
+do-build-openssl: .openssl.configure_done
+	( \
+		cd ${OPENSSL_BUILD}; \
+		make -j ${JOBS} \
+	)
+
 #######################################################################
 # Configure targets
 #######################################################################
@@ -206,12 +219,25 @@ do-conf-llvm: .llvm.bootstrap_stage1_done
 		${CMAKE} ${BSD_DIR}/llvm-project/llvm ${LLVM_CMAKE_STAGE2}; \
 	)
 
-do-conf-cmake: .cmake.checkout_done
+do-conf-cmake: .cmake.checkout_done .openssl.install_done
+	# NOTE: -DCMAKE_FIND_LIBRARY_CUSTOM_LIB_SUFFIX=64 is needed
+	# 	due to a bug in cmake. Remove it when we upgrade to CMAKE >= 2.23
+	# 	Related cmake bug: https://gitlab.kitware.com/cmake/cmake/-/issues/22945
 	( \
 		[ -d ${CMAKE_BUILD} ] || mkdir -p ${CMAKE_BUILD}; \
 		cd ${CMAKE_BUILD}; \
 		${BSD_DIR}/cmake/bootstrap --prefix=${INSTALL_DIR} --parallel=${JOBS} \
-			-- -DCMAKE_USE_OPENSSL=OFF -DCPACK_GENERATOR="DEB;TXZ" \
+			-- -DCMAKE_USE_OPENSSL=ON -DCPACK_GENERATOR="DEB;TXZ" \
+			-DCMAKE_FIND_LIBRARY_CUSTOM_LIB_SUFFIX=64 \
+			-DOPENSSL_ROOT_DIR=${INSTALL_DIR}/openssl/ \
+	)
+
+do-conf-openssl: .openssl.checkout_done
+	( \
+		[ -d ${OPENSSL_BUILD} ] || mkdir -p ${OPENSSL_BUILD}; \
+		cd ${OPENSSL_BUILD}; \
+		${APACHE_DIR}/openssl/Configure --prefix=${INSTALL_DIR}/openssl \
+			--openssldir=${INSTALL_DIR}/openssl/ssl \
 	)
 
 #######################################################################
@@ -273,6 +299,8 @@ do-checkout-llvm:
 do-checkout-cmake:
 	git submodule update --init --recursive ${BSD_DIR}/cmake
 
+do-checkout-openssl:
+	git submodule update --init --recursive ${APACHE_DIR}/openssl
 
 #######################################################################
 # Clean targets
