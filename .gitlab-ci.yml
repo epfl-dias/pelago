@@ -165,8 +165,8 @@ package-build-tools-llvm:
   - CCACHE_DIR=${ccache_dir} ccache --zero-stats
   - CCACHE_DIR=${ccache_dir} CCACHE_NOHASHDIR=1 CCACHE_BASEDIR=$(pwd) CPACK_PACKAGE_CONTACT=dias-ci@epfl.ch make do-package-llvm
   - CCACHE_DIR=${ccache_dir} ccache --show-stats
-  - 'curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file build/llvm-stage2/LLVM-13.0.0-Linux.deb "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/LLVM/13.0.0/LLVM-13.0.0-Linux.deb"'
-  - 'curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file build/llvm-stage2/LLVM-13.0.0-Linux.tar.xz "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/LLVM/13.0.0/LLVM-13.0.0-Linux.tar.xz"'
+  - 'curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file build/llvm-stage2/LLVM-14.0.0-Linux.deb "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/LLVM/14.0.0/LLVM-14.0.0-Linux.deb"'
+  - 'curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file build/llvm-stage2/LLVM-14.0.0-Linux.tar.xz "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/LLVM/14.0.0/LLVM-14.0.0-Linux.tar.xz"'
  <<: *cache
  <<: *restrict_precommit
 
@@ -186,10 +186,10 @@ build-dependencies-container:
  image: docker:19.03.12
  stage: Builder Build Container
  script:
-  - cp build/llvm-stage2/LLVM-13.0.0-Linux.deb src/executor/tools/docker/proteus-build/
+  - cp build/llvm-stage2/LLVM-14.0.0-Linux.deb src/executor/tools/docker/proteus-build/
   - cp build/cmake/cmake-3.20.2-Linux-x86_64.deb src/executor/tools/docker/proteus-build/
   # localhost as we use the parent docker
-  - cd src/executor/tools/docker/proteus-build && docker build -t localhost:5055/proteus/pelago-build:latest --build-arg LLVM_VERSION=13.0.0 .
+  - cd src/executor/tools/docker/proteus-build && docker build -t localhost:5055/proteus/pelago-build:latest --build-arg LLVM_VERSION=14.0.0 .
   - docker push localhost:5055/proteus/pelago-build:latest
  <<: *cache
  <<: *restrict_precommit
