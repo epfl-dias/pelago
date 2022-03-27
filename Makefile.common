@@ -228,6 +228,7 @@ do-conf-cmake: .cmake.checkout_done .openssl.install_done
 		cd ${CMAKE_BUILD}; \
 		${BSD_DIR}/cmake/bootstrap --prefix=${INSTALL_DIR} --parallel=${JOBS} \
 			-- -DCMAKE_USE_OPENSSL=ON -DCPACK_GENERATOR="DEB;TXZ" \
+			-DOPENSSL_USE_STATIC_LIBS=ON \
 			-DCMAKE_FIND_LIBRARY_CUSTOM_LIB_SUFFIX=64 \
 			-DOPENSSL_ROOT_DIR=${INSTALL_DIR}/openssl/ \
 	)
