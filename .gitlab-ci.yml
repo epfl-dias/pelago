@@ -177,8 +177,8 @@ package-build-tools-cmake:
   - CCACHE_DIR=${ccache_dir} ccache --zero-stats
   - CCACHE_DIR=${ccache_dir} CCACHE_NOHASHDIR=1 CCACHE_BASEDIR=$(pwd) CPACK_PACKAGE_CONTACT=dias-ci@epfl.ch make do-package-cmake
   - CCACHE_DIR=${ccache_dir} ccache --show-stats
-  - 'curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file build/cmake/cmake-3.20.2-Linux-x86_64.deb "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/cmake/3.20.2/cmake-3.20.2-Linux-x86_64.deb"'
-  - 'curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file build/cmake/cmake-3.20.2-Linux-x86_64.tar.xz "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/cmake/3.20.2/cmake-3.20.2-Linux-x86_64.tar.xz"'
+  - 'curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file build/cmake/cmake-3.23.0-Linux-x86_64.deb "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/cmake/3.23.0/cmake-3.23.0-Linux-x86_64.deb"'
+  - 'curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file build/cmake/cmake-3.23.0-Linux-x86_64.tar.xz "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/cmake/3.23.0/cmake-3.23.0-Linux-x86_64.tar.xz"'
  <<: *cache
  <<: *restrict_precommit
 
@@ -187,9 +187,9 @@ build-dependencies-container:
  stage: Builder Build Container
  script:
   - cp build/llvm-stage2/LLVM-14.0.0-Linux.deb src/executor/tools/docker/proteus-build/
-  - cp build/cmake/cmake-3.20.2-Linux-x86_64.deb src/executor/tools/docker/proteus-build/
+  - cp build/cmake/cmake-3.23.0-Linux-x86_64.deb src/executor/tools/docker/proteus-build/
   # localhost as we use the parent docker
-  - cd src/executor/tools/docker/proteus-build && docker build -t localhost:5055/proteus/pelago-build:latest --build-arg LLVM_VERSION=14.0.0 .
+  - cd src/executor/tools/docker/proteus-build && docker build -t localhost:5055/proteus/pelago-build:latest --build-arg LLVM_VERSION=14.0.0 --build-arg CMAKE_VERSION=3.23.0 .
   - docker push localhost:5055/proteus/pelago-build:latest
  <<: *cache
  <<: *restrict_precommit
