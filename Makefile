@@ -24,32 +24,28 @@ export CC CPP CXX
 endif
 
 # List of all the projects / repositories
-PROJECTS:= cmake llvm executor avatica
+PROJECTS:= cmake llvm avatica
 
-all: cmake llvm | executor
+all: cmake llvm
 	@echo "-----------------------------------------------------------------------"
 	@echo ""
 
-run-server: all
-	cd ${INSTALL_DIR}/pelago && \
-		java -jar ${INSTALL_DIR}/lib/clotho.jar \
-			--server inputs/plans/schema.json
-
-run-client: avatica
-	JAVA_CLASSPATH=${INSTALL_DIR}/lib/avatica-1.13.0.jar \
-		sqlline --color=true \
-			-u "jdbc:avatica:remote:url=http://localhost:8081;serialization=PROTOBUF"
+# Deprecated: run proteus-cli-server from Proteus reposistory.
+#run-server: all
+#	cd ${INSTALL_DIR}/pelago && \
+#		java -jar ${INSTALL_DIR}/lib/clotho.jar \
+#			--server inputs/plans/schema.json
+#
+# Deprecated: run proteus-planner from Proteus reposistory.
+#run-client: avatica
+#	JAVA_CLASSPATH=${INSTALL_DIR}/lib/avatica-1.13.0.jar \
+#		sqlline --color=true \
+#			-u "jdbc:avatica:remote:url=http://localhost:8081;serialization=PROTOBUF"
 
 #######################################################################
 # top-level targets, checks if a call to make is required before
 # calling it.
 #######################################################################
-
-.PHONY: executor
-executor: external-libs .executor.install_done
-	# This is the main tree, so do not shortcut it
-	rm .executor.install_done
-	rm .executor.build_done
 
 .PHONY: avatica
 avatica: .avatica.install_done
@@ -78,23 +74,10 @@ do-build-avatica do-conf-avatica:
 	true
 
 #######################################################################
-# Configure targets
-#######################################################################
-
-do-conf-executor: .executor.checkout_done external-libs
-	[ -d ${BUILD_DIR}/executor ] || mkdir -p ${BUILD_DIR}/executor
-	cd ${BUILD_DIR}/executor && \
-		${COMMON_ENV} \
-		${CMAKE} ${SRC_DIR}/executor \
-			-DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
-			-DSTANDALONE=ON
-
-#######################################################################
 # Clean targets
 #######################################################################
 
 .PHONY: clean
-clean: clean-executor
 
 #######################################################################
 # Retrieve common definitions and targets.
