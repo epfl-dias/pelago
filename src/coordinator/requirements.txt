@@ -1,9 +1,0 @@
-setuptools
-cython
-google-api-python-client
-oauth2client
-python-dateutil
-pytz
-jpype1
-jaydebeapi
-pandas
